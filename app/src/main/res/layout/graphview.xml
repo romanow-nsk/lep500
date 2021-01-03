@@ -3,10 +3,10 @@
     	android:layout_width="match_parent"
 		android:layout_height="wrap_content"
     	android:background="@color/graph_back"  >
-		android:layout_margin="5dp"
+		android:layout_marginRight="5dp"
         <LinearLayout
             android:id="@+id/viewPanel"
-            android:layout_width="match_parent"
+            android:layout_width="350dp"
             android:layout_height="200dp"
             />
 </LinearLayout>

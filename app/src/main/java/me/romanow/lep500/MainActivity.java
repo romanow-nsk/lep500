@@ -2,12 +2,9 @@ package me.romanow.lep500;
 
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GraphViewSeries;
 import com.jjoe64.graphview.LineGraphView;
@@ -29,7 +26,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
-import romanow.snn_simulator.fft.FFTAudioSource;
 import romanow.snn_simulator.fft.FFTAudioTextFile;
 import romanow.snn_simulator.fft.FFTCallBack;
 import romanow.snn_simulator.fft.FFTParams;
@@ -46,8 +42,10 @@ public class MainActivity extends AppCompatActivity {
     private final int  compressLevel=25;
     private final int  p_SubToneCount=1;
     private boolean isLoaded=false;
-    private int nFirst=5;
+    private int nFirst=10;
     private int nSmooth=50;
+    private float kAmpl=1.0f;
+    private int correctPointsNum=10;            // Кол-во точек для коррекции экспоненты
     private final int KF100=FFT.sizeHZ/100;
     private final int MiddleMode=0x01;
     private final int DispMode=0x02;
@@ -66,15 +64,7 @@ public class MainActivity extends AppCompatActivity {
             Toolbar toolbar = findViewById(R.id.toolbar);
             setSupportActionBar(toolbar);
             log = (LinearLayout) findViewById(R.id.log);
-            FloatingActionButton fab = findViewById(R.id.fab);
-            fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-            });
-        } catch (Exception ee){ addToLog(ee.toString());}
+            } catch (Exception ee){ addToLog(ee.toString());}
     }
 
     private void addToLog(String ss){
@@ -112,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
                 fft.setLogFreqMode(p_LogFreq);
                 fft.setCompressMode(p_Compress);
                 fft.setCompressGrade(compressLevel);
+                fft.setKAmpl(kAmpl);
                 inputStat.reset();
                 fft.fftDirect(xx,back);
                 } catch (Exception ee){
@@ -120,14 +111,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-    private String showStatistic(){
-        String out = "Отсчетов:"+inputStat.getCount()+"\n";
-        double mid =inputStat.getMid();
-        out+=String.format("Среднее:%6.4f\n",mid);
-        out+=String.format("Приведенное станд.откл:%6.4f\n",inputStat.getDisp()/mid);
-        out+=String.format("Приведенная неравн.по T:%6.4f\n",inputStat.getDiffT()/mid);
-        out+=String.format("Приведенная неравн.по F:%6.4f\n",inputStat.getDiffF()/mid);
-        ArrayList<Extreme> list = inputStat.createExtrems();
+
+    private String showExtrems(boolean mode){
+        String out = mode ? "По амплитуде" : "По спаду";
+        out+="\n";
+        ArrayList<Extreme> list = inputStat.createExtrems(mode);
         int count = nFirst < list.size() ? nFirst : list.size();
         Extreme extreme = list.get(0);
         double val0 = extreme.value;
@@ -138,8 +126,21 @@ public class MainActivity extends AppCompatActivity {
             double proc = extreme.value*100/val0;
             sum+=proc;
             out+=String.format("Макс=%6.4f f=%4.2f гц %d%% к первому\n",extreme.value,extreme.freq/KF100,(int)proc);
-        }
+            }
         out+=String.format("Средний - %d%% к первому\n",(int)(sum/(count-1)));
+        return out;
+        }
+
+
+    private String showStatistic(){
+        String out = "Отсчетов:"+inputStat.getCount()+"\n";
+        double mid =inputStat.getMid();
+        out+=String.format("Среднее:%6.4f\n",mid);
+        out+=String.format("Приведенное станд.откл:%6.4f\n",inputStat.getDisp()/mid);
+        out+=String.format("Приведенная неравн.по T:%6.4f\n",inputStat.getDiffT()/mid);
+        out+=String.format("Приведенная неравн.по F:%6.4f\n",inputStat.getDiffF()/mid);
+        out+=showExtrems(true);
+        out+=showExtrems(false);
         return out;
         }
     //--------------------------------------------------------------------------
@@ -150,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFinish() {
             inputStat.smooth(nSmooth);
+            addToLog("Коррекция exp k="+inputStat.correctExp(correctPointsNum));
             addToLog(showStatistic());
             addGraphView(inputStat,MiddleMode);
             addToLog("-------------------------");
@@ -160,6 +162,10 @@ public class MainActivity extends AppCompatActivity {
                 float lineSpectrum[] = fft.getSpectrum();
                 boolean xx;
                 try {
+                    fft.setLogFreqMode(p_LogFreq);
+                    fft.setCompressMode(p_Compress);
+                    fft.setCompressGrade(compressLevel);
+                    fft.setKAmpl(kAmpl);
                     inputStat.addStatistic(lineSpectrum);
                     } catch (Exception ex) {
                         addToLog(ex.toString());
@@ -225,8 +231,8 @@ public class MainActivity extends AppCompatActivity {
         }
     //--------------------------------------------------------------------------
     public void paintOne(LineGraphView graphView,float data[], int color){
-        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length];
-        for(int j=0;j<data.length;j++){                    // Подпись значений факторов j-ой ячейки
+        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length/2];
+        for(int j=0;j<data.length/2;j++){                    // Подпись значений факторов j-ой ячейки
             zz[j] = new GraphView.GraphViewData(j,data[j]);
             }
         GraphViewSeries series = new GraphViewSeries(zz);

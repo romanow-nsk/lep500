@@ -15,11 +15,11 @@
     <item
         android:id="@+id/action_analyse"
         android:orderInCategory="103"
-        android:title="Анализ"
+        android:title="@string/action_analyse"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_clear"
         android:orderInCategory="104"
-        android:title="+id/action_clear"
+        android:title="@string/action_clear"
         app:showAsAction="never" />
 </menu>
