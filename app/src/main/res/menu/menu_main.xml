@@ -1,0 +1,20 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="me.romanow.lep500.MainActivity">
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="@string/action_settings"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_loadTxt"
+        android:orderInCategory="102"
+        android:title="@string/action_loadTxt"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_analyse"
+        android:orderInCategory="103"
+        android:title="Анализ"
+        app:showAsAction="never" />
+</menu>
