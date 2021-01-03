@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Опоры России</string>
     <string name="action_settings">Настройки</string>
-    <string name="action_loadTxt">Загрузка txt</string>
+    <string name="action_loadTxt">Загрузка</string>
     <string name="action_analyse">Анализ</string>
+    <string name="action_clear">Очистить ленту</string>
 </resources>

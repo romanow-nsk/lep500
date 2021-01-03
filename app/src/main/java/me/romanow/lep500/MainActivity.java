@@ -1,12 +1,16 @@
 package me.romanow.lep500;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.GraphViewSeries;
+import com.jjoe64.graphview.LineGraphView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -44,6 +48,12 @@ public class MainActivity extends AppCompatActivity {
     private boolean isLoaded=false;
     private int nFirst=5;
     private int nSmooth=50;
+    private final int KF100=FFT.sizeHZ/100;
+    private final int MiddleMode=0x01;
+    private final int DispMode=0x02;
+    private final int MiddleColor = 0x0000FF00;
+    private final int DispColor = 0x000000FF;
+    private final int GraphBackColor = 0x00A0C0C0;
     //----------------------------------------------------------------------------
     private LinearLayout log;
 
@@ -51,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             setContentView(R.layout.activity_main);
             Toolbar toolbar = findViewById(R.id.toolbar);
             setSupportActionBar(toolbar);
@@ -92,6 +103,10 @@ public class MainActivity extends AppCompatActivity {
                 FFTAudioTextFile xx = new FFTAudioTextFile();
                 xx.readData(new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri), "Windows-1251")));
                 fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,1.0));
+                String ss = uri.getLastPathSegment();
+                int idx= ss.lastIndexOf("/");
+                if (idx!=-1) ss = ss.substring(idx+1);
+                addToLog("Файл: "+ss);
                 addToLog("Отсчетов "+xx.getFrameLength());
                 isLoaded=true;
                 fft.setLogFreqMode(p_LogFreq);
@@ -108,23 +123,23 @@ public class MainActivity extends AppCompatActivity {
     private String showStatistic(){
         String out = "Отсчетов:"+inputStat.getCount()+"\n";
         double mid =inputStat.getMid();
-        out+="Среднее:"+mid+"\n";
-        out+="Приведенное станд.откл:"+inputStat.getDisp()/mid+"\n";
-        out+="Приведенная неравн.по T:"+inputStat.getDiffT()/mid+"\n";
-        out+="Приведенная неравн.по F:"+inputStat.getDiffF()/mid+"\n";
+        out+=String.format("Среднее:%6.4f\n",mid);
+        out+=String.format("Приведенное станд.откл:%6.4f\n",inputStat.getDisp()/mid);
+        out+=String.format("Приведенная неравн.по T:%6.4f\n",inputStat.getDiffT()/mid);
+        out+=String.format("Приведенная неравн.по F:%6.4f\n",inputStat.getDiffF()/mid);
         ArrayList<Extreme> list = inputStat.createExtrems();
         int count = nFirst < list.size() ? nFirst : list.size();
         Extreme extreme = list.get(0);
         double val0 = extreme.value;
-        out+=String.format("Макс=%6.4f f=%d гц",extreme.value,(int)extreme.freq)+"\n";
+        out+=String.format("Макс=%6.4f f=%4.2f гц\n",extreme.value,extreme.freq/KF100);
         double sum=0;
         for(int i=1; i<count;i++){
             extreme = list.get(i);
             double proc = extreme.value*100/val0;
             sum+=proc;
-            out+=String.format("Макс=%6.4f f=%d гц %d%% к первому",extreme.value,(int)extreme.freq,(int)proc)+"\n";
+            out+=String.format("Макс=%6.4f f=%4.2f гц %d%% к первому\n",extreme.value,extreme.freq/KF100,(int)proc);
         }
-        out+=String.format("Средний - %d%% к первому",(int)(sum/(count-1)))+"\n";
+        out+=String.format("Средний - %d%% к первому\n",(int)(sum/(count-1)));
         return out;
         }
     //--------------------------------------------------------------------------
@@ -136,6 +151,8 @@ public class MainActivity extends AppCompatActivity {
         public void onFinish() {
             inputStat.smooth(nSmooth);
             addToLog(showStatistic());
+            addGraphView(inputStat,MiddleMode);
+            addToLog("-------------------------");
             }
         @Override
         public boolean onStep(int nBlock, int calcMS, float totalMS, FFT fft) {
@@ -152,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onError(Exception ee) {
-            addToLog("1."+ee.toString());
+            addToLog(ee.toString());
             }
         @Override
         public void onMessage(String mes) {
@@ -181,15 +198,15 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             return true;
             }
+        if (id == R.id.action_clear) {
+            log.removeAllViews();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
     //--------------------------------------------------------------------------------------------------------
     public void popupToast(int viewId, String ss) {
         Toast toast3 = Toast.makeText(getApplicationContext(), ss, Toast.LENGTH_LONG);
-        //LinearLayout lrr = (LinearLayout) getLayoutInflater().inflate(R.layout.toast,null);
-        //((TextView)lrr.findViewById(R.id.toastText)).setText(ss);
-        //toast3.setGravity(Gravity.BOTTOM, 0, 100);
-        //toast3.setView(lrr);
         LinearLayout toastContainer = (LinearLayout) toast3.getView();
         ImageView catImageView = new ImageView(getApplicationContext());
         TextView txt = (TextView)toastContainer.getChildAt(0);
@@ -205,5 +222,39 @@ public class MainActivity extends AppCompatActivity {
         }
     public void popupInfo(String ss) {
         popupToast(R.drawable.info,ss);
+        }
+    //--------------------------------------------------------------------------
+    public void paintOne(LineGraphView graphView,float data[], int color){
+        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length];
+        for(int j=0;j<data.length;j++){                    // Подпись значений факторов j-ой ячейки
+            zz[j] = new GraphView.GraphViewData(j,data[j]);
+            }
+        GraphViewSeries series = new GraphViewSeries(zz);
+        series.getStyle().color = color | 0xFF000000;
+        graphView.addSeries(series);
+        }
+
+
+    private void addGraphView(LayerStatistic stat, int mode){
+        LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
+        LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
+        LineGraphView graphView = new LineGraphView(this,"");
+        String axis[]={"0","10","20","30","40","50"};
+        //---------- слишком много ------------------------
+        //int n = factors.getSize();
+        //String axis[]=new String[n];
+        //for(int j=0;j<n;j++){   // Подпись значений факторов j-ой ячейки
+        //    axis[j] = factors.getFactorString(j);
+        //    }
+        graphView.setHorizontalLabels(axis);
+        graphView.setScalable(true);
+        graphView.setScrollable(true);
+        graphView.getGraphViewStyle().setTextSize(15);
+        panel.addView(graphView);
+        log.addView(lrr);
+        if ((mode & MiddleMode)!=0)
+            paintOne(graphView,inputStat.getMids(),MiddleColor);
+        if ((mode & DispMode)!=0)
+            paintOne(graphView,inputStat.getDisps(),DispColor);
         }
 }
