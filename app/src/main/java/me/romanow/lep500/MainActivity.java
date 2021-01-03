@@ -43,23 +43,35 @@ public class MainActivity extends AppCompatActivity {
     private final int  p_SubToneCount=1;
     private boolean isLoaded=false;
     private int nFirst=5;
+    private int nSmooth=50;
+    //----------------------------------------------------------------------------
+    private LinearLayout log;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        try {
+            setContentView(R.layout.activity_main);
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+            log = (LinearLayout) findViewById(R.id.log);
+            FloatingActionButton fab = findViewById(R.id.fab);
+            fab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+            });
+        } catch (Exception ee){ addToLog(ee.toString());}
     }
+
+    private void addToLog(String ss){
+        TextView txt = new TextView(this);
+        txt.setText(ss);
+        log.addView(txt);
+        }
+
 
     private final int CHOOSE_RESULT=10;
     private void preloadFromText(){
@@ -80,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 FFTAudioTextFile xx = new FFTAudioTextFile();
                 xx.readData(new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri), "Windows-1251")));
                 fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,1.0));
-                popupInfo("Отсчетов "+xx.getFrameLength());
+                addToLog("Отсчетов "+xx.getFrameLength());
                 isLoaded=true;
                 fft.setLogFreqMode(p_LogFreq);
                 fft.setCompressMode(p_Compress);
@@ -88,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                 inputStat.reset();
                 fft.fftDirect(xx,back);
                 } catch (Exception ee){
-                    popupInfo(ee.toString());
+                    addToLog(ee.toString());
                     }
             }
         }
@@ -119,11 +131,11 @@ public class MainActivity extends AppCompatActivity {
     private FFTCallBack back = new FFTCallBack(){
         @Override
         public void onStart(float msOnStep) {
-            popupInfo("Начало");
             }
         @Override
         public void onFinish() {
-            popupInfo(showStatistic());
+            inputStat.smooth(nSmooth);
+            addToLog(showStatistic());
             }
         @Override
         public boolean onStep(int nBlock, int calcMS, float totalMS, FFT fft) {
@@ -132,16 +144,19 @@ public class MainActivity extends AppCompatActivity {
                 boolean xx;
                 try {
                     inputStat.addStatistic(lineSpectrum);
-                    } catch (Exception ex) {  popupInfo(ex.toString()); }
+                    } catch (Exception ex) {
+                        addToLog(ex.toString());
+                        return false;
+                        }
                 return true;
             }
         @Override
         public void onError(Exception ee) {
-            popupInfo("1."+ee.toString());
+            addToLog("1."+ee.toString());
             }
         @Override
         public void onMessage(String mes) {
-            popupInfo(mes);
+            addToLog(mes);
             }
     };
 
