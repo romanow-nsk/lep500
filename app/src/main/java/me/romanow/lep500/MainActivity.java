@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private int noFirstPoints=30;           // Отрезать точек справа и слева
     private int noLastPoints=3000;
     private float kMultiple=3.0f;
-    private float kAmpl=1;
+    private float kAmpl=1f;
     private int nTrendPoints=100;             // Точек при сглаживании тренда =0 - отключено
     private final int KF100=FFT.sizeHZ/100;
     private final int MiddleMode=0x01;
@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
                 FFTAudioTextFile xx = new FFTAudioTextFile();
                 xx.setnPoints(nTrendPoints);
                 xx.readData(new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri), "Windows-1251")));
+                xx.removeTrend(nTrendPoints);
                 fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
                 String ss = uri.getLastPathSegment();
                 int idx= ss.lastIndexOf("/");
