@@ -35,17 +35,19 @@ import romanow.snn_simulator.layer.LayerStatistic;
 public class MainActivity extends AppCompatActivity {
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
-    private final int  p_BlockSize=2;
-    private final int  p_OverProc=95;
+    private final int  p_BlockSize=8;
+    private final int  p_OverProc=50;
     private final boolean  p_LogFreq=false;
-    private final boolean  p_Compress=true;
-    private final int  compressLevel=25;
+    private final boolean  p_Compress=false;
+    private final int  compressLevel=0;
     private final int  p_SubToneCount=1;
-    private boolean isLoaded=false;
-    private int nFirst=10;
-    private int nSmooth=50;
-    private float kAmpl=1.0f;
-    private int correctPointsNum=10;            // Кол-во точек для коррекции экспоненты
+    private int     kSmooth=50;             // Циклов сглаживания
+    private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
+    private int noFirstPoints=30;           // Отрезать точек справа и слева
+    private int noLastPoints=3000;
+    private float kMultiple=3.0f;
+    private float kAmpl=1;
+    private int nTrendPoints=100;             // Точек при сглаживании тренда =0 - отключено
     private final int KF100=FFT.sizeHZ/100;
     private final int MiddleMode=0x01;
     private final int DispMode=0x02;
@@ -64,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
             Toolbar toolbar = findViewById(R.id.toolbar);
             setSupportActionBar(toolbar);
             log = (LinearLayout) findViewById(R.id.log);
-            } catch (Exception ee){ addToLog(ee.toString());}
+            } catch (Exception ee){ addToLog(createFatalMessage(ee,10));}
     }
 
     private void addToLog(String ss){
@@ -74,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-    private final int CHOOSE_RESULT=10;
+    private final int CHOOSE_RESULT=100;
     private void preloadFromText(){
         Intent chooseFile;
         Intent intent;
@@ -91,14 +93,14 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Uri uri = data.getData();
                 FFTAudioTextFile xx = new FFTAudioTextFile();
+                xx.setnPoints(nTrendPoints);
                 xx.readData(new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri), "Windows-1251")));
-                fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,1.0));
+                fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
                 String ss = uri.getLastPathSegment();
                 int idx= ss.lastIndexOf("/");
                 if (idx!=-1) ss = ss.substring(idx+1);
                 addToLog("Файл: "+ss);
                 addToLog("Отсчетов "+xx.getFrameLength());
-                isLoaded=true;
                 fft.setLogFreqMode(p_LogFreq);
                 fft.setCompressMode(p_Compress);
                 fft.setCompressGrade(compressLevel);
@@ -106,42 +108,54 @@ public class MainActivity extends AppCompatActivity {
                 inputStat.reset();
                 fft.fftDirect(xx,back);
                 } catch (Exception ee){
-                    addToLog(ee.toString());
+                    addToLog(createFatalMessage(ee,10));
                     }
             }
         }
 
-
-    private String showExtrems(boolean mode){
-        String out = mode ? "По амплитуде" : "По спаду";
-        out+="\n";
-        ArrayList<Extreme> list = inputStat.createExtrems(mode);
-        int count = nFirst < list.size() ? nFirst : list.size();
-        Extreme extreme = list.get(0);
-        double val0 = extreme.value;
-        out+=String.format("Макс=%6.4f f=%4.2f гц\n",extreme.value,extreme.freq/KF100);
-        double sum=0;
-        for(int i=1; i<count;i++){
-            extreme = list.get(i);
-            double proc = extreme.value*100/val0;
-            sum+=proc;
-            out+=String.format("Макс=%6.4f f=%4.2f гц %d%% к первому\n",extreme.value,extreme.freq/KF100,(int)proc);
-            }
-        out+=String.format("Средний - %d%% к первому\n",(int)(sum/(count-1)));
+    public static String createFatalMessage(Throwable ee, int stackSize) {
+        String ss = ee.toString() + "\n";
+        StackTraceElement dd[] = ee.getStackTrace();
+        for (int i = 0; i < dd.length && i < stackSize; i++) {
+            ss += dd[i].getClassName() + "." + dd[i].getMethodName() + ":" + dd[i].getLineNumber() + "\n";
+        }
+        String out = "Программная ошибка:\n" + ss;
         return out;
         }
 
+    private void showExtrems(boolean mode){
+        int sz = inputStat.getMids().length;
+        addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",100./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
+        ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints);
+        if (list.size()==0){
+            addToLog("Экстремумов не найдено");
+            return;
+            }
+        int count = nFirstMax < list.size() ? nFirstMax : list.size();
+        Extreme extreme = list.get(0);
+        double val0 = mode ? extreme.value : extreme.diff;
+        addToLog(mode ? "По амплитуде" : "По спаду");
+        addToLog(String.format("Макс=%6.4f f=%6.4f гц",extreme.value,extreme.freq/KF100));
+        double sum=0;
+        for(int i=1; i<count;i++){
+            extreme = list.get(i);
+            double proc = (mode ? extreme.value : extreme.diff)*100/val0;
+            sum+=proc;
+            addToLog(String.format("Макс=%6.4f f=%6.4f гц %d%% к первому",extreme.value,extreme.freq/KF100,(int)proc));
+            }
+        addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
+        }
 
-    private String showStatistic(){
+    private void showStatistic(){
         String out = "Отсчетов:"+inputStat.getCount()+"\n";
         double mid =inputStat.getMid();
         out+=String.format("Среднее:%6.4f\n",mid);
         out+=String.format("Приведенное станд.откл:%6.4f\n",inputStat.getDisp()/mid);
         out+=String.format("Приведенная неравн.по T:%6.4f\n",inputStat.getDiffT()/mid);
         out+=String.format("Приведенная неравн.по F:%6.4f\n",inputStat.getDiffF()/mid);
-        out+=showExtrems(true);
-        out+=showExtrems(false);
-        return out;
+        addToLog(out);
+        showExtrems(true);
+        showExtrems(false);
         }
     //--------------------------------------------------------------------------
     private FFTCallBack back = new FFTCallBack(){
@@ -150,9 +164,8 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onFinish() {
-            inputStat.smooth(nSmooth);
-            addToLog("Коррекция exp k="+inputStat.correctExp(correctPointsNum));
-            addToLog(showStatistic());
+            inputStat.smooth(kSmooth);
+            showStatistic();
             addGraphView(inputStat,MiddleMode);
             addToLog("-------------------------");
             }
@@ -162,20 +175,16 @@ public class MainActivity extends AppCompatActivity {
                 float lineSpectrum[] = fft.getSpectrum();
                 boolean xx;
                 try {
-                    fft.setLogFreqMode(p_LogFreq);
-                    fft.setCompressMode(p_Compress);
-                    fft.setCompressGrade(compressLevel);
-                    fft.setKAmpl(kAmpl);
                     inputStat.addStatistic(lineSpectrum);
                     } catch (Exception ex) {
-                        addToLog(ex.toString());
+                        addToLog(createFatalMessage(ex,10));
                         return false;
                         }
                 return true;
             }
         @Override
         public void onError(Exception ee) {
-            addToLog(ee.toString());
+            addToLog(createFatalMessage(ee,10));
             }
         @Override
         public void onMessage(String mes) {
@@ -231,9 +240,10 @@ public class MainActivity extends AppCompatActivity {
         }
     //--------------------------------------------------------------------------
     public void paintOne(LineGraphView graphView,float data[], int color){
-        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length/2];
-        for(int j=0;j<data.length/2;j++){                    // Подпись значений факторов j-ой ячейки
-            zz[j] = new GraphView.GraphViewData(j,data[j]);
+        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length-noFirstPoints-noLastPoints];
+        for(int j=noFirstPoints;j<data.length-noLastPoints;j++){                    // Подпись значений факторов j-ой ячейки
+            double freq = j*50./data.length;
+            zz[j-noFirstPoints] = new GraphView.GraphViewData(freq,data[j]);
             }
         GraphViewSeries series = new GraphViewSeries(zz);
         series.getStyle().color = color | 0xFF000000;
@@ -245,14 +255,8 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
         LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
         LineGraphView graphView = new LineGraphView(this,"");
-        String axis[]={"0","10","20","30","40","50"};
-        //---------- слишком много ------------------------
-        //int n = factors.getSize();
-        //String axis[]=new String[n];
-        //for(int j=0;j<n;j++){   // Подпись значений факторов j-ой ячейки
-        //    axis[j] = factors.getFactorString(j);
-        //    }
-        graphView.setHorizontalLabels(axis);
+        //String axis[]={"0","10","20","30","40","50"};
+        //graphView.setHorizontalLabels(axis);
         graphView.setScalable(true);
         graphView.setScrollable(true);
         graphView.getGraphViewStyle().setTextSize(15);
