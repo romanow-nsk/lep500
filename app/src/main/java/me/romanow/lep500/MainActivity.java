@@ -184,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
                 processInputStream(is);
                 }
             if(requestCode == CHOOSE_RESULT_COPY) {
-                Pair<InputStream,FileDescription> pp = openSelected(data);
+                final Pair<InputStream,FileDescription> pp = openSelected(data);
                 final InputStream is = pp.o1;
                 if (is==null)
                     return;
@@ -215,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
                                 });
                             }
                         }});
+                    thread.start();
                     }
             } catch (Exception ee){
                 addToLog(createFatalMessage(ee,10));
