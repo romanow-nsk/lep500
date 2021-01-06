@@ -1,25 +1,45 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="me.romanow.lep500.MainActivity">
+    tools:context=".MainActivity">
+    <item
+        android:id="@+id/action_dir"
+        android:orderInCategory="100"
+        android:title="@string/action_dir"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_short"
+        android:orderInCategory="101"
+        android:title="@string/action_short"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_full"
+        android:orderInCategory="102"
+        android:title="@string/action_full"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_addToArchive"
+        android:orderInCategory="103"
+        android:title="@string/action_addToArchive"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_shortOutSide"
+        android:orderInCategory="104"
+        android:title="@string/action_shortOutSide"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_fullOutSide"
+        android:orderInCategory="105"
+        android:title="@string/action_fullOutSide"
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_settings"
-        android:orderInCategory="100"
+        android:orderInCategory="106"
         android:title="@string/action_settings"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_loadTxt"
-        android:orderInCategory="102"
-        android:title="@string/action_loadTxt"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/action_analyse"
-        android:orderInCategory="103"
-        android:title="@string/action_analyse"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/action_clear"
-        android:orderInCategory="104"
+        android:orderInCategory="107"
         android:title="@string/action_clear"
         app:showAsAction="never" />
 </menu>

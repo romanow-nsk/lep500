@@ -1,3 +1,18 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
+    <dimen name="txt_small">15dp</dimen>
+    <dimen name="txt_normal">20dp</dimen>
+    <dimen name="high_small">30dp</dimen>
+    <dimen name="high_normal">40dp</dimen>
+    <dimen name="high_big">60dp</dimen>
+    <dimen name="step_small">20dp</dimen>
+    <dimen name="step_normal">20dp</dimen>
+    <dimen name="image_small">40dp</dimen>
+    <dimen name="image_normal">50dp</dimen>
+    <dimen name="image_big">70dp</dimen>
+    <dimen name="table_cell">50dp</dimen>
+    <dimen name="table_col">150dp</dimen>
+    <dimen name="table_row">200dp</dimen>
+    <dimen name="table_mid">150dp</dimen>
+    <dimen name="table_long">350dp</dimen>
 </resources>

@@ -1,7 +1,11 @@
 <resources>
     <string name="app_name">Опоры России</string>
     <string name="action_settings">Настройки</string>
-    <string name="action_loadTxt">Загрузка</string>
-    <string name="action_analyse">Анализ</string>
+    <string name="action_full">Подробно (архив)</string>
+    <string name="action_short">Основная частота (архив)</string>
+    <string name="action_shortOutSide">Основная частота (файл)</string>
+    <string name="action_fullOutSide">Подробно (файл)</string>
+    <string name="action_addToArchive">Файл в архив</string>
     <string name="action_clear">Очистить ленту</string>
+    <string name="action_dir">Архив</string>
 </resources>

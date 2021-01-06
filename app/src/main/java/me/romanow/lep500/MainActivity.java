@@ -5,6 +5,7 @@ import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
 
+import com.google.gson.Gson;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GraphViewSeries;
 import com.jjoe64.graphview.LineGraphView;
@@ -16,13 +17,22 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.apache.commons.math3.geometry.euclidean.twod.Line;
+
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
@@ -41,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private final boolean  p_Compress=false;
     private final int  compressLevel=0;
     private final int  p_SubToneCount=1;
+    private final int greatTextSize=20;     // Кпупный шрифт
     private int     kSmooth=50;             // Циклов сглаживания
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=30;           // Отрезать точек справа и слева
@@ -54,6 +65,11 @@ public class MainActivity extends AppCompatActivity {
     private final int MiddleColor = 0x0000FF00;
     private final int DispColor = 0x000000FF;
     private final int GraphBackColor = 0x00A0C0C0;
+    private boolean fullInfo=false;
+    private boolean hideFFTOutput=false;
+    private DataDesription archive = new DataDesription();
+    //--------------------------------------------------------------------------
+    final static String archiveFile="LEP500Archive.json";
     //----------------------------------------------------------------------------
     private LinearLayout log;
 
@@ -70,11 +86,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToLog(String ss){
+        addToLog(ss,0);
+        }
+    private void addToLog(String ss, int textSize){
         TextView txt = new TextView(this);
         txt.setText(ss);
+        if (textSize!=0)
+            txt.setTextSize(textSize);
         log.addView(txt);
         }
-
+    private void addToLogButton(String ss){
+        addToLogButton(ss,null,null);
+        }
+    private void addToLogButton(String ss, View.OnClickListener listener){
+        addToLogButton(ss,listener,null);
+        }
+    private void addToLogButton(String ss, View.OnClickListener listener, View.OnLongClickListener listenerLong){
+        LinearLayout button = (LinearLayout)getLayoutInflater().inflate(R.layout.button,null);
+        Button bb = (Button)button.findViewById(R.id.button_press);
+        bb.setText(ss);
+        bb.setTextSize(greatTextSize);
+        if (listener!=null)
+            bb.setOnClickListener(listener);
+        if (listenerLong!=null)
+            bb.setOnLongClickListener(listenerLong);
+        log.addView(button);
+        }
 
     private final int CHOOSE_RESULT=100;
     private void preloadFromText(){
@@ -86,28 +123,41 @@ public class MainActivity extends AppCompatActivity {
         intent = Intent.createChooser(chooseFile, "Выбрать txt");
         startActivityForResult(intent, CHOOSE_RESULT);
         }
+
+    public void processInputStream(InputStream is) throws Exception{
+        FFTAudioTextFile xx = new FFTAudioTextFile();
+        xx.setnPoints(nTrendPoints);
+        xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
+        xx.removeTrend(nTrendPoints);
+        fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
+        if (!hideFFTOutput)
+            addToLog("Отсчетов "+xx.getFrameLength());
+        fft.setLogFreqMode(p_LogFreq);
+        fft.setCompressMode(p_Compress);
+        fft.setCompressGrade(compressLevel);
+        fft.setKAmpl(kAmpl);
+        inputStat.reset();
+        fft.fftDirect(xx,back);
+        }
+
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode != RESULT_OK) return;
         String path     = "";
         if(requestCode == CHOOSE_RESULT) {
             try {
                 Uri uri = data.getData();
-                FFTAudioTextFile xx = new FFTAudioTextFile();
-                xx.setnPoints(nTrendPoints);
-                xx.readData(new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri), "Windows-1251")));
-                xx.removeTrend(nTrendPoints);
-                fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
                 String ss = uri.getLastPathSegment();
                 int idx= ss.lastIndexOf("/");
                 if (idx!=-1) ss = ss.substring(idx+1);
-                addToLog("Файл: "+ss);
-                addToLog("Отсчетов "+xx.getFrameLength());
-                fft.setLogFreqMode(p_LogFreq);
-                fft.setCompressMode(p_Compress);
-                fft.setCompressGrade(compressLevel);
-                fft.setKAmpl(kAmpl);
-                inputStat.reset();
-                fft.fftDirect(xx,back);
+                FileDescription description = new FileDescription(ss);
+                String out = description.parseFromName();
+                if (out!=null){
+                    addToLog("Имя файла: "+out);
+                    return;
+                    }
+                addToLog(description.toString(), fullInfo ? 0 : greatTextSize);
+                InputStream is = getContentResolver().openInputStream(uri);
+                processInputStream(is);
                 } catch (Exception ee){
                     addToLog(createFatalMessage(ee,10));
                     }
@@ -158,6 +208,14 @@ public class MainActivity extends AppCompatActivity {
         showExtrems(true);
         showExtrems(false);
         }
+    private void showShort(){
+        ArrayList<Extreme> list = inputStat.createExtrems(true,noFirstPoints,noLastPoints);
+        if (list.size()==0){
+            addToLog("Экстремумов не найдено",greatTextSize);
+            return;
+            }
+        addToLog(String.format("Основная частота=%6.4f гц",list.get(0).freq/KF100),greatTextSize);
+        }
     //--------------------------------------------------------------------------
     private FFTCallBack back = new FFTCallBack(){
         @Override
@@ -166,9 +224,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFinish() {
             inputStat.smooth(kSmooth);
-            showStatistic();
+            if (fullInfo)
+                showStatistic();
+            else
+                showShort();
             addGraphView(inputStat,MiddleMode);
-            addToLog("-------------------------");
+            addToLog("");
             }
         @Override
         public boolean onStep(int nBlock, int calcMS, float totalMS, FFT fft) {
@@ -189,7 +250,8 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onMessage(String mes) {
-            addToLog(mes);
+            if (!hideFFTOutput)
+                addToLog(mes);
             }
     };
 
@@ -200,26 +262,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_loadTxt) {
-            preloadFromText();
-            return true;
-            }
-        if (id == R.id.action_settings) {
-            return true;
-            }
-        if (id == R.id.action_clear) {
-            log.removeAllViews();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
     //--------------------------------------------------------------------------------------------------------
     public void popupToast(int viewId, String ss) {
         Toast toast3 = Toast.makeText(getApplicationContext(), ss, Toast.LENGTH_LONG);
@@ -268,4 +310,123 @@ public class MainActivity extends AppCompatActivity {
         if ((mode & DispMode)!=0)
             paintOne(graphView,inputStat.getDisps(),DispColor);
         }
+    //--------------------------------------------------------------------------
+    public final String androidFileDirectory(){
+        return getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
+        }
+    public void loadArchive(){
+        try {
+            Gson gson = new Gson();
+            File ff = new File(androidFileDirectory());
+            if (!ff.exists()) {
+                ff.mkdir();
+                }
+            String ss = androidFileDirectory()+"/"+archiveFile;
+            InputStreamReader out = new InputStreamReader(new FileInputStream(ss), "UTF-8");
+            archive = (DataDesription) gson.fromJson(out, DataDesription.class);
+            out.close();
+            } catch (Exception ee) {
+                addToLog("Ошибка чтения архива "+ee.toString());
+                addToLog("Создан пустой");
+                saveArchive();
+                }
+            }
+    public void saveArchive() {
+        try {
+            Gson gson = new Gson();
+            File ff = new File(androidFileDirectory());
+            if (!ff.exists()) {
+                ff.mkdir();
+                }
+            String ss = androidFileDirectory()+"/"+archiveFile;
+            OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(ss), "UTF-8");
+            gson.toJson(archive, out);
+            out.flush();
+            out.close();
+            } catch (Exception ee) {
+                addToLog("Ошибка записи архива "+ee.toString()); }
+        }
+    //------------------------------------------------------------------------
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+        if (id == R.id.action_fullOutSide) {
+            fullInfo=true;
+            hideFFTOutput=false;
+            preloadFromText();
+            return true;
+            }
+        if (id == R.id.action_shortOutSide) {
+            fullInfo=false;
+            hideFFTOutput=true;
+            preloadFromText();
+            return true;
+            }
+        if (id == R.id.action_settings) {
+            return true;
+            }
+        if (id == R.id.action_clear) {
+            log.removeAllViews();
+            return true;
+            }
+        if (id == R.id.action_dir) {
+            createArchive();
+            for(FileDescription ff : archive.fileList)
+                addArchiveItemToLog(ff);
+            return true;
+            }
+        return super.onOptionsItemSelected(item);
+        }
+
+    public void addArchiveItemToLog(final FileDescription ff){
+        View.OnClickListener listener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    fullInfo=false;
+                    hideFFTOutput=true;
+                    FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
+                    addToLog(ff.toString(),greatTextSize);
+                    processInputStream(fis);
+                    } catch (Exception e) {
+                        addToLog("Файл не открыт: "+ff.originalFileName+"\n"+e.toString());
+                        }
+                }
+            };
+        View.OnLongClickListener listenerLong = new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                try {
+                    fullInfo=true;
+                    hideFFTOutput=false;
+                    FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
+                    addToLog(ff.toString());
+                    processInputStream(fis);
+                    } catch (Exception e) {
+                        addToLog("Файл не открыт: "+ff.originalFileName+"\n"+e.toString());
+                        return false;
+                        }
+                return true;
+                }
+            };
+        addToLogButton(ff.toString(),listener,listenerLong);
+        }
+    public void createArchive(){
+        File ff = new File(androidFileDirectory());
+        if (!ff.exists()) {
+            ff.mkdir();
+            }
+        archive.fileList.clear();
+        for(String ss : ff.list()){
+            FileDescription dd = new FileDescription(ss);
+            String zz = dd.parseFromName();
+            if (zz!=null)
+                addToLog("Файл: "+ss+" "+zz);
+            else
+                archive.fileList.add(dd);
+        }
+    }
 }
