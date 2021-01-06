@@ -1,17 +1,22 @@
 package me.romanow.lep500;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class FileDescription {
-    long createData = 0;            // Дата создания
+    DateTime createDate = new DateTime();
     String lepNumber="";            // Номер опоры
     String srcNumber="";            // Номер датчика
     String comment="";              // Комментарий
     String originalFileName="";     // Оригинальное имя
     GPSPoint gps = new GPSPoint();
-    public String parseFromName(){
+    public String parseFromName() {
         String ss = originalFileName.toUpperCase();
         if (!ss.endsWith(".TXT"))
             return "Тип файла - не txt";
@@ -23,14 +28,12 @@ public class FileDescription {
         lepNumber = ss.substring(idx2+1);
         srcNumber = ss.substring(idx1+1,idx2);
         ss = ss.substring(0,idx1);
-        SimpleDateFormat format = new SimpleDateFormat("YYYYMMdd'T'HHmmss");
-        Date dd = format.parse(ss,new ParsePosition(0));
-        createData = dd.getTime();
-        String zz = format.format(dd);
+        DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd'T'HHmmss");
+        createDate = formatter.parseDateTime(ss);
         return null;
         }
     public String toString(){
-        return "Опора "+lepNumber+" датчик "+srcNumber+"\n"+new SimpleDateFormat("dd-MM-YYYY HH:mm:ss").format(new Date(createData));
+        return "Опора "+lepNumber+" датчик "+srcNumber+"\n"+createDate.toString(DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss"));
         }
     public FileDescription(String fname){
         originalFileName = fname;

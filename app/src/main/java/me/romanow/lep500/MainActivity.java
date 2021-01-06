@@ -355,8 +355,6 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
         LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
         LineGraphView graphView = new LineGraphView(this,"");
-        //String axis[]={"0","10","20","30","40","50"};
-        //graphView.setHorizontalLabels(axis);
         graphView.setScalable(true);
         graphView.setScrollable(true);
         graphView.getGraphViewStyle().setTextSize(15);
