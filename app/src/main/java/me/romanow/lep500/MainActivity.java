@@ -47,8 +47,8 @@ import romanow.snn_simulator.layer.LayerStatistic;
 public class MainActivity extends AppCompatActivity {
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
-    private final int  p_BlockSize=8;
-    private final int  p_OverProc=50;
+    private int  p_BlockSize=8;
+    private final int  p_OverProc=90;
     private final boolean  p_LogFreq=false;
     private final boolean  p_Compress=false;
     private final int  compressLevel=0;
@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private final int greatTextSize=20;     // Кпупный шрифт
     private int     kSmooth=50;             // Циклов сглаживания
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
-    private int noFirstPoints=30;           // Отрезать точек справа и слева
+    private int noFirstPoints=20;           // Отрезать точек справа и слева
     private int noLastPoints=3000;
     private float kMultiple=3.0f;
     private float kAmpl=1f;
@@ -96,10 +96,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 scroll.fullScroll(ScrollView.FOCUS_DOWN);
-            }
-        });
-    }
-
+                }
+            });
+        }
 
     private void addToLog(String ss){
         addToLog(ss,0);
@@ -146,9 +145,16 @@ public class MainActivity extends AppCompatActivity {
         xx.setnPoints(nTrendPoints);
         xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
         xx.removeTrend(nTrendPoints);
+        long lnt = xx.getFrameLength();
+        for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
+        if (p_BlockSize!=1) p_BlockSize/=2;
         fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
-        if (!hideFFTOutput)
+        if (!hideFFTOutput){
             addToLog("Отсчетов "+xx.getFrameLength());
+            addToLog("Кадр: "+p_BlockSize*FFT.Size0);
+            addToLog("Перекрытие: "+p_OverProc);
+            addToLog("Дискретность: "+String.format("%5.4f",100./(p_BlockSize*FFT.Size0))+" гц");
+            }
         fft.setLogFreqMode(p_LogFreq);
         fft.setCompressMode(p_Compress);
         fft.setCompressGrade(compressLevel);
@@ -256,13 +262,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
     private void showStatistic(){
-        String out = "Отсчетов:"+inputStat.getCount()+"\n";
-        double mid =inputStat.getMid();
-        out+=String.format("Среднее:%6.4f\n",mid);
-        out+=String.format("Приведенное станд.откл:%6.4f\n",inputStat.getDisp()/mid);
-        out+=String.format("Приведенная неравн.по T:%6.4f\n",inputStat.getDiffT()/mid);
-        out+=String.format("Приведенная неравн.по F:%6.4f\n",inputStat.getDiffF()/mid);
-        addToLog(out);
         showExtrems(true);
         showExtrems(false);
         }
@@ -308,8 +307,8 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onMessage(String mes) {
-            if (!hideFFTOutput)
-                addToLog(mes);
+            //if (!hideFFTOutput)
+            //    addToLog(mes);
             }
     };
 
