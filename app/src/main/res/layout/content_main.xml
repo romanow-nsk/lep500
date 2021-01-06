@@ -9,7 +9,8 @@
     tools:showIn="@layout/activity_main">
 
     <ScrollView
-        android:layout_width="409dp"
+        android:id="@+id/scroll"
+        android:layout_width="360dp"
         android:layout_height="0dp"
         android:layout_margin="5dp"
         tools:layout_editor_absoluteX="1dp"

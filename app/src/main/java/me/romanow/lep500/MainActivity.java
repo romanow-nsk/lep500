@@ -20,6 +20,7 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -72,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
     final static String archiveFile="LEP500Archive.json";
     //----------------------------------------------------------------------------
     private LinearLayout log;
+    private ScrollView scroll;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,8 +84,19 @@ public class MainActivity extends AppCompatActivity {
             Toolbar toolbar = findViewById(R.id.toolbar);
             setSupportActionBar(toolbar);
             log = (LinearLayout) findViewById(R.id.log);
+            scroll = (ScrollView)findViewById(R.id.scroll);
             } catch (Exception ee){ addToLog(createFatalMessage(ee,10));}
+        }
+
+    public void scrollDown(){
+        scroll.post(new Runnable() {
+            @Override
+            public void run() {
+                scroll.fullScroll(ScrollView.FOCUS_DOWN);
+            }
+        });
     }
+
 
     private void addToLog(String ss){
         addToLog(ss,0);
@@ -94,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
         if (textSize!=0)
             txt.setTextSize(textSize);
         log.addView(txt);
+        scrollDown();
         }
     private void addToLogButton(String ss){
         addToLogButton(ss,null,null);
@@ -111,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
         if (listenerLong!=null)
             bb.setOnLongClickListener(listenerLong);
         log.addView(button);
+        scrollDown();
         }
 
     private final int CHOOSE_RESULT=100;
