@@ -434,31 +434,67 @@ public class MainActivity extends AppCompatActivity {
             return true;
             }
         if (id == R.id.action_dir) {
-            createArchive();
-            for(FileDescription ff : archive.fileList)
-                addArchiveItemToLog(ff);
+            selectFromArchive();
             return true;
             }
-        if (id == R.id.action_dir) {
-            createArchive();
-            for(FileDescription ff : archive.fileList)
-                addArchiveItemToLogForDelete(ff);
+        if (id == R.id.action_delete) {
+            deleteDialog();
             return true;
             }
         return super.onOptionsItemSelected(item);
         }
 
-    public void addArchiveItemToLogForDelete(final FileDescription ff){
-        View.OnClickListener listener = new View.OnClickListener() {
+    public void deleteDialog(){
+        createArchive();
+        ArrayList<String> out = new ArrayList<>();
+        for(FileDescription ff : archive.fileList)
+            out.add(ff.toString());
+        new ListBoxDialog(this, out, "Удалить из архива", new ListBoxListener() {
             @Override
-            public void onClick(View v) {
-                File file = new File(androidFileDirectory()+"/"+ff.originalFileName);
+            public void onSelect(int index) {
+                File file = new File(androidFileDirectory()+"/"+archive.fileList.get(index).originalFileName);
                 file.delete();
                 createArchive();
                 }
-            };
-        addToLogButton(ff.toString(),listener);
+            @Override
+            public void onLongSelect(int index) {}
+        }).create();
+    }
+
+
+    public  void procOnClick(int index,boolean longClick){
+        FileDescription fd = archive.fileList.get(index);
+        String fname = fd.originalFileName;
+        try {
+            fullInfo=longClick;
+            hideFFTOutput=!longClick;
+            FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
+            addToLog(fd.toString(),greatTextSize);
+            processInputStream(fis);
+            } catch (Exception e) {
+            addToLog("Файл не открыт: "+fname+"\n"+e.toString());
         }
+    }
+
+    public void selectFromArchive(){
+        createArchive();
+        ArrayList<String> out = new ArrayList<>();
+        for(FileDescription ff : archive.fileList)
+            out.add(ff.toString());
+        new ListBoxDialog(this, out, "Промотр архива", new ListBoxListener() {
+            @Override
+            public void onSelect(int index) {
+                procOnClick(index,false);
+                }
+            @Override
+            public void onLongSelect(int index) {
+                procOnClick(index,true);
+                }
+            }).create();
+    }
+
+
+
     public void addArchiveItemToLog(final FileDescription ff){
         View.OnClickListener listener = new View.OnClickListener() {
             @Override

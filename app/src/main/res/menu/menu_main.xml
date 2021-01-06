@@ -4,18 +4,8 @@
     tools:context=".MainActivity">
     <item
         android:id="@+id/action_dir"
-        android:orderInCategory="100"
-        android:title="@string/action_dir"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/action_short"
         android:orderInCategory="101"
-        android:title="@string/action_short"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/action_full"
-        android:orderInCategory="102"
-        android:title="@string/action_full"
+        android:title="@string/action_dir"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_addToArchive"
