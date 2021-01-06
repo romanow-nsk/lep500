@@ -240,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showExtrems(boolean mode){
         int sz = inputStat.getMids().length;
-        addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",100./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
+        addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
         ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints);
         if (list.size()==0){
             addToLog("Экстремумов не найдено");
@@ -250,13 +250,13 @@ public class MainActivity extends AppCompatActivity {
         Extreme extreme = list.get(0);
         double val0 = mode ? extreme.value : extreme.diff;
         addToLog(mode ? "По амплитуде" : "По спаду");
-        addToLog(String.format("Макс=%6.4f f=%6.4f гц",extreme.value,extreme.freq/KF100));
+        addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц",extreme.value,extreme.diff,extreme.freq/KF100));
         double sum=0;
         for(int i=1; i<count;i++){
             extreme = list.get(i);
             double proc = (mode ? extreme.value : extreme.diff)*100/val0;
             sum+=proc;
-            addToLog(String.format("Макс=%6.4f f=%6.4f гц %d%% к первому",extreme.value,extreme.freq/KF100,(int)proc));
+            addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц %d%%",extreme.value,extreme.diff, extreme.freq/KF100,(int)proc));
             }
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
