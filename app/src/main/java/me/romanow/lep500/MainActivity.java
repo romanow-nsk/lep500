@@ -13,6 +13,7 @@ import com.jjoe64.graphview.LineGraphView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Menu;
@@ -74,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
     //----------------------------------------------------------------------------
     private LinearLayout log;
     private ScrollView scroll;
+    private final int CHOOSE_RESULT=100;
+    private final int CHOOSE_RESULT_COPY=101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,15 +131,14 @@ public class MainActivity extends AppCompatActivity {
         scrollDown();
         }
 
-    private final int CHOOSE_RESULT=100;
-    private void preloadFromText(){
+    private void preloadFromText(int resultCode){
         Intent chooseFile;
         Intent intent;
         chooseFile = new Intent(Intent.ACTION_GET_CONTENT);
         chooseFile.addCategory(Intent.CATEGORY_OPENABLE);
         chooseFile.setType("text/plain");
         intent = Intent.createChooser(chooseFile, "Выбрать txt");
-        startActivityForResult(intent, CHOOSE_RESULT);
+        startActivityForResult(intent, resultCode);
         }
 
     public void processInputStream(InputStream is) throws Exception{
@@ -155,28 +157,68 @@ public class MainActivity extends AppCompatActivity {
         fft.fftDirect(xx,back);
         }
 
+    public Pair<InputStream,FileDescription> openSelected(Intent data) throws FileNotFoundException {
+        Uri uri = data.getData();
+        String ss = uri.getLastPathSegment();
+        int idx= ss.lastIndexOf("/");
+        if (idx!=-1) ss = ss.substring(idx+1);
+        FileDescription description = new FileDescription(ss);
+        String out = description.parseFromName();
+        if (out!=null){
+            addToLog("Имя файла: "+out);
+            return null;
+            }
+        addToLog(description.toString(), fullInfo ? 0 : greatTextSize);
+        InputStream is = getContentResolver().openInputStream(uri);
+        return new Pair(is,description);
+        }
+
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode != RESULT_OK) return;
         String path     = "";
-        if(requestCode == CHOOSE_RESULT) {
-            try {
-                Uri uri = data.getData();
-                String ss = uri.getLastPathSegment();
-                int idx= ss.lastIndexOf("/");
-                if (idx!=-1) ss = ss.substring(idx+1);
-                FileDescription description = new FileDescription(ss);
-                String out = description.parseFromName();
-                if (out!=null){
-                    addToLog("Имя файла: "+out);
+        try {
+            if(requestCode == CHOOSE_RESULT) {
+                InputStream is = openSelected(data).o1;
+                if (is==null)
                     return;
-                    }
-                addToLog(description.toString(), fullInfo ? 0 : greatTextSize);
-                InputStream is = getContentResolver().openInputStream(uri);
                 processInputStream(is);
-                } catch (Exception ee){
-                    addToLog(createFatalMessage(ee,10));
+                }
+            if(requestCode == CHOOSE_RESULT_COPY) {
+                Pair<InputStream,FileDescription> pp = openSelected(data);
+                final InputStream is = pp.o1;
+                if (is==null)
+                    return;
+                File ff = new File(androidFileDirectory());
+                if (!ff.exists()) {
+                    ff.mkdir();
                     }
-            }
+                final FileOutputStream fos = new FileOutputStream(androidFileDirectory()+"/"+pp.o2.originalFileName);
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            while (true) {
+                                int vv = is.read();
+                                if (vv == -1)
+                                    break;
+                                fos.write(vv);
+                            }
+                            fos.flush();
+                            fos.close();
+                            is.close();
+                            } catch (final Exception ee) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        addToLog(createFatalMessage(ee,10));
+                                    }
+                                });
+                            }
+                        }});
+                    }
+            } catch (Exception ee){
+                addToLog(createFatalMessage(ee,10));
+                }
         }
 
     public static String createFatalMessage(Throwable ee, int stackSize) {
@@ -371,16 +413,20 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_fullOutSide) {
             fullInfo=true;
             hideFFTOutput=false;
-            preloadFromText();
+            preloadFromText(CHOOSE_RESULT);
             return true;
             }
         if (id == R.id.action_shortOutSide) {
             fullInfo=false;
             hideFFTOutput=true;
-            preloadFromText();
+            preloadFromText(CHOOSE_RESULT);
             return true;
             }
         if (id == R.id.action_settings) {
+            return true;
+            }
+        if (id == R.id.action_addToArchive) {
+            preloadFromText(CHOOSE_RESULT_COPY);
             return true;
             }
         if (id == R.id.action_clear) {
@@ -393,9 +439,26 @@ public class MainActivity extends AppCompatActivity {
                 addArchiveItemToLog(ff);
             return true;
             }
+        if (id == R.id.action_dir) {
+            createArchive();
+            for(FileDescription ff : archive.fileList)
+                addArchiveItemToLogForDelete(ff);
+            return true;
+            }
         return super.onOptionsItemSelected(item);
         }
 
+    public void addArchiveItemToLogForDelete(final FileDescription ff){
+        View.OnClickListener listener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                File file = new File(androidFileDirectory()+"/"+ff.originalFileName);
+                file.delete();
+                createArchive();
+                }
+            };
+        addToLogButton(ff.toString(),listener);
+        }
     public void addArchiveItemToLog(final FileDescription ff){
         View.OnClickListener listener = new View.OnClickListener() {
             @Override

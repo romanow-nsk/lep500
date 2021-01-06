@@ -8,4 +8,5 @@
     <string name="action_addToArchive">Файл в архив</string>
     <string name="action_clear">Очистить ленту</string>
     <string name="action_dir">Архив</string>
+    <string name="action_delete">Удалить из архива</string>
 </resources>
