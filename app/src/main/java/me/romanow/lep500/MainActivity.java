@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, resultCode);
         }
 
-    public void processInputStream(InputStream is) throws Exception{
+    public void processInputStream(InputStream is) throws Throwable{
         FFTAudioTextFile xx = new FFTAudioTextFile();
         xx.setnPoints(nTrendPoints);
         xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
@@ -223,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
                         }});
                     thread.start();
                     }
-            } catch (Exception ee){
+            } catch (Throwable ee){
                 addToLog(createFatalMessage(ee,10));
                 }
         }
@@ -266,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
         showExtrems(false);
         }
     private void showShort(){
-        ArrayList<Extreme> list = inputStat.createExtrems(true,noFirstPoints,noLastPoints);
+        ArrayList<Extreme> list = inputStat.createExtrems(true,noFirstPoints,noLastPoints,true);
         if (list.size()==0){
             addToLog("Экстремумов не найдено",greatTextSize);
             return;
@@ -469,8 +469,8 @@ public class MainActivity extends AppCompatActivity {
             FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
             addToLog(fd.toString(),greatTextSize);
             processInputStream(fis);
-            } catch (Exception e) {
-            addToLog("Файл не открыт: "+fname+"\n"+e.toString());
+            } catch (Throwable e) {
+            addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
         }
     }
 
@@ -503,8 +503,8 @@ public class MainActivity extends AppCompatActivity {
                     FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
                     addToLog(ff.toString(),greatTextSize);
                     processInputStream(fis);
-                    } catch (Exception e) {
-                        addToLog("Файл не открыт: "+ff.originalFileName+"\n"+e.toString());
+                    } catch (Throwable e) {
+                        addToLog("Файл не открыт: "+ff.originalFileName+"\n"+createFatalMessage(e,10));
                         }
                 }
             };
@@ -517,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
                     FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
                     addToLog(ff.toString());
                     processInputStream(fis);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         addToLog("Файл не открыт: "+ff.originalFileName+"\n"+e.toString());
                         return false;
                         }
