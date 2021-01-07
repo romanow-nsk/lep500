@@ -241,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
     private void showExtrems(boolean mode){
         int sz = inputStat.getMids().length;
         addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
-        ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints);
+        ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true);
         if (list.size()==0){
             addToLog("Экстремумов не найдено");
             return;
