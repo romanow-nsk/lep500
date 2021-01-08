@@ -17,21 +17,26 @@ public class FileDescription {
     String originalFileName="";     // Оригинальное имя
     GPSPoint gps = new GPSPoint();
     public String parseFromName() {
-        String ss = originalFileName.toUpperCase();
-        if (!ss.endsWith(".TXT"))
-            return "Тип файла - не txt";
-        ss = ss.substring(0,ss.length()-4);
-        int idx1=ss.indexOf("_");
-        int idx2=ss.lastIndexOf("_");
-        if (idx1==-1 || idx2==-1 || idx1==idx2)
-            return "Ошибка формата имени, нет \'_\'";
-        lepNumber = ss.substring(idx2+1);
-        srcNumber = ss.substring(idx1+1,idx2);
-        ss = ss.substring(0,idx1);
-        DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd'T'HHmmss");
-        createDate = formatter.parseDateTime(ss);
-        return null;
-        }
+        try{
+            String ss = originalFileName.toUpperCase();
+            if (!ss.endsWith(".TXT"))
+                return originalFileName+": тип файла - не txt";
+            ss = ss.substring(0,ss.length()-4);
+            int idx1=ss.indexOf("_");
+            int idx2=ss.lastIndexOf("_");
+            if (idx1==-1 || idx2==-1 || idx1==idx2)
+                return originalFileName+": формат имени, нет \'_\'";
+            lepNumber = ss.substring(idx2+1);
+            srcNumber = ss.substring(idx1+1,idx2);
+            ss = ss.substring(0,idx1);
+            DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd'T'HHmmss");
+            createDate = formatter.parseDateTime(ss);
+            return null;
+            }
+            catch(Exception ee){
+                return originalFileName+": "+ee.toString();
+                }
+            }
     public String toString(){
         return "Опора "+lepNumber+" датчик "+srcNumber+"\n"+createDate.toString(DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss"));
         }

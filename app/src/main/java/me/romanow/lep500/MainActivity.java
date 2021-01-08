@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         String out = description.parseFromName();
         if (out!=null){
             addToLog("Имя файла: "+out);
-            return null;
+            return new Pair(null,null);
             }
         addToLog(description.toString(), fullInfo ? 0 : greatTextSize);
         InputStream is = getContentResolver().openInputStream(uri);
