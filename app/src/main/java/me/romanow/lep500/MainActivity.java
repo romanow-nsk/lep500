@@ -35,6 +35,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
@@ -57,7 +59,9 @@ public class MainActivity extends AppCompatActivity {
     private int     kSmooth=50;             // Циклов сглаживания
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
-    private int noLastPoints=3000;
+    private int noLastPoints=1000;
+    private final double FirstFreq=0.4;       // Частоты отображения графика
+    private final double LastFreq=30;
     private float kMultiple=3.0f;
     private float kAmpl=1f;
     private int nTrendPoints=100;             // Точек при сглаживании тренда =0 - отключено
@@ -100,6 +104,12 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+    private void calcFirstLAstLoints(){
+        int width=fft.getParams().W();
+        double df = 100./width;
+        noFirstPoints = (int)(FirstFreq/df);
+        noLastPoints = (int)((50-LastFreq)/df);
+        }
     private void addToLog(String ss){
         addToLog(ss,0);
         }
@@ -165,7 +175,15 @@ public class MainActivity extends AppCompatActivity {
 
     public Pair<InputStream,FileDescription> openSelected(Intent data) throws FileNotFoundException {
         Uri uri = data.getData();
-        String ss = uri.getLastPathSegment();
+        String ss = uri.getEncodedPath();
+        try {
+            ss = URLDecoder.decode( ss, "UTF-8" );
+            } catch (UnsupportedEncodingException e) {
+                addToLog("Системная ошибка в имени файла:"+e.toString());
+                addToLog(ss);
+                return new Pair<>(null,null);
+                }
+        //String ss = uri.getLastPathSegment();
         int idx= ss.lastIndexOf("/");
         if (idx!=-1) ss = ss.substring(idx+1);
         FileDescription description = new FileDescription(ss);
@@ -280,6 +298,7 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onFinish() {
+            calcFirstLAstLoints();
             inputStat.smooth(kSmooth);
             if (fullInfo)
                 showStatistic();
