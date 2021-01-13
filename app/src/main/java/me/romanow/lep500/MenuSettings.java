@@ -30,9 +30,8 @@ public class MenuSettings{
         tt.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId==6){
+                if (actionId==6 || actionId==5){
                     lsn.onValue(v.getText().toString());
-                    return true;
                     }
                 return false;
             }
