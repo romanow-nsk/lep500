@@ -2,6 +2,7 @@ package me.romanow.lep500;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.*;
 
@@ -26,6 +27,16 @@ public class MenuSettings{
                 }
             });
         img.setClickable(true);
+        tt.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId==6){
+                    lsn.onValue(v.getText().toString());
+                    return true;
+                    }
+                return false;
+            }
+        });
         return xx;
         }
     private MainActivity base;
