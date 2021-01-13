@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="200dp"
+    android:layout_height="40dp"
+    android:background="#FF202020"
+    >
+    <TextView style="@style/BlackButton"
+        android:layout_width="200dp"
+        android:layout_height="35dp"
+        android:textSize="20dp"
+        android:id="@+id/dialog_settings_name"
+        android:clickable="true" />
+    <EditText style="@style/BlackButton"
+        android:id="@+id/dialog_settings_value"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:layout_marginLeft="10dp"
+        android:gravity="center"
+        android:clickable="true"
+        android:inputType="number"
+        android:lines="1"
+        android:text=""
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="@color/White"
+        android:textSize="20dp" />
+	
+</LinearLayout>
+

@@ -49,22 +49,17 @@ import romanow.snn_simulator.layer.LayerStatistic;
 public class MainActivity extends AppCompatActivity {
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
-    private int  p_BlockSize=1;
-    private final int  p_OverProc=50;
+    LEP500Settings set = new LEP500Settings();
     private final boolean  p_LogFreq=false;
     private final boolean  p_Compress=false;
     private final int  compressLevel=0;
     private final int  p_SubToneCount=1;
     private final int greatTextSize=20;     // Кпупный шрифт
-    private int     kSmooth=30;             // Циклов сглаживания
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
     private int noLastPoints=1000;
-    private final double FirstFreq=0.4;       // Частоты отображения графика
-    private final double LastFreq=30;
     private float kMultiple=3.0f;
     private float kAmpl=1f;
-    private int nTrendPoints=50;             // Точек при сглаживании тренда =0 - отключено
     private final int KF100=FFT.sizeHZ/100;
     private final int MiddleMode=0x01;
     private final int DispMode=0x02;
@@ -92,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
             setSupportActionBar(toolbar);
             log = (LinearLayout) findViewById(R.id.log);
             scroll = (ScrollView)findViewById(R.id.scroll);
+            loadSettings();
             } catch (Exception ee){ addToLog(createFatalMessage(ee,10));}
         }
 
@@ -107,8 +103,8 @@ public class MainActivity extends AppCompatActivity {
     private void calcFirstLastPoints(){
         int width=fft.getParams().W();
         double df = 100./width;
-        noFirstPoints = (int)(FirstFreq/df);
-        noLastPoints = (int)((50-LastFreq)/df);
+        noFirstPoints = (int)(set.FirstFreq/df);
+        noLastPoints = (int)((50-set.LastFreq)/df);
         }
     private void addToLog(String ss){
         addToLog(ss,0);
@@ -152,18 +148,18 @@ public class MainActivity extends AppCompatActivity {
 
     public void processInputStream(InputStream is) throws Throwable{
         FFTAudioTextFile xx = new FFTAudioTextFile();
-        xx.setnPoints(nTrendPoints);
+        xx.setnPoints(set.nTrendPoints);
         xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
-        xx.removeTrend(nTrendPoints);
+        xx.removeTrend(set.nTrendPoints);
         long lnt = xx.getFrameLength();
         //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
         //if (p_BlockSize!=1) p_BlockSize/=2;
-        fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
+        fft.setFFTParams(new FFTParams(set.p_BlockSize*FFT.Size0,set.p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
         if (!hideFFTOutput){
             addToLog("Отсчетов "+xx.getFrameLength());
-            addToLog("Кадр: "+p_BlockSize*FFT.Size0);
-            addToLog("Перекрытие: "+p_OverProc);
-            addToLog("Дискретность: "+String.format("%5.4f",100./(p_BlockSize*FFT.Size0))+" гц");
+            addToLog("Кадр: "+set.p_BlockSize*FFT.Size0);
+            addToLog("Перекрытие: "+set.p_OverProc);
+            addToLog("Дискретность: "+String.format("%5.4f",100./(set.p_BlockSize*FFT.Size0))+" гц");
             }
         fft.setLogFreqMode(p_LogFreq);
         fft.setCompressMode(p_Compress);
@@ -299,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFinish() {
             calcFirstLastPoints();
-            inputStat.smooth(kSmooth);
+            inputStat.smooth(set.kSmooth);
             if (fullInfo)
                 showStatistic();
             else
@@ -420,6 +416,37 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ee) {
                 addToLog("Ошибка записи архива "+ee.toString()); }
         }
+    public void saveSettings() {
+        try {
+            Gson gson = new Gson();
+            File ff = new File(androidFileDirectory());
+            if (!ff.exists()) {
+                ff.mkdir();
+                }
+            String ss = androidFileDirectory()+"/"+LEP500Settings.class.getSimpleName()+".json";
+            OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(ss), "UTF-8");
+            gson.toJson(set, out);
+            out.flush();
+            out.close();
+        } catch (Exception ee) {
+            addToLog("Ошибка записи настроек "+ee.toString()); }
+    }
+    public void loadSettings() {
+        try {
+            Gson gson = new Gson();
+            File ff = new File(androidFileDirectory());
+            if (!ff.exists()) {
+                ff.mkdir();
+                }
+            String ss = androidFileDirectory()+"/"+LEP500Settings.class.getSimpleName()+".json";
+            InputStreamReader out = new InputStreamReader(new FileInputStream(ss), "UTF-8");
+            set = (LEP500Settings) gson.fromJson(out, LEP500Settings.class);
+            out.close();
+        } catch (Exception ee) {
+            addToLog("Ошибка чтения настроек (сброшены)");
+            saveSettings();
+            }
+    }
     //------------------------------------------------------------------------
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -440,6 +467,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
             }
         if (id == R.id.action_settings) {
+            new MenuSettings(this);
             return true;
             }
         if (id == R.id.action_addToArchive) {
