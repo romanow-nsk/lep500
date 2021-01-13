@@ -581,6 +581,8 @@ public class MainActivity extends AppCompatActivity {
         archive.fileList.clear();
         for(String ss : ff.list()){
             FileDescription dd = new FileDescription(ss);
+            if (!dd.originalFileName.toUpperCase().endsWith(".TXT"))
+                continue;
             String zz = dd.parseFromName();
             if (zz!=null)
                 addToLog("Файл: "+ss+" "+zz);
