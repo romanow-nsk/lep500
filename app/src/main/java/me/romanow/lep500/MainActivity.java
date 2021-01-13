@@ -49,14 +49,14 @@ import romanow.snn_simulator.layer.LayerStatistic;
 public class MainActivity extends AppCompatActivity {
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
-    private int  p_BlockSize=8;
-    private final int  p_OverProc=90;
+    private int  p_BlockSize=1;
+    private final int  p_OverProc=50;
     private final boolean  p_LogFreq=false;
     private final boolean  p_Compress=false;
     private final int  compressLevel=0;
     private final int  p_SubToneCount=1;
     private final int greatTextSize=20;     // Кпупный шрифт
-    private int     kSmooth=50;             // Циклов сглаживания
+    private int     kSmooth=30;             // Циклов сглаживания
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
     private int noLastPoints=1000;
@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private final double LastFreq=30;
     private float kMultiple=3.0f;
     private float kAmpl=1f;
-    private int nTrendPoints=100;             // Точек при сглаживании тренда =0 - отключено
+    private int nTrendPoints=50;             // Точек при сглаживании тренда =0 - отключено
     private final int KF100=FFT.sizeHZ/100;
     private final int MiddleMode=0x01;
     private final int DispMode=0x02;
@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-    private void calcFirstLAstLoints(){
+    private void calcFirstLastPoints(){
         int width=fft.getParams().W();
         double df = 100./width;
         noFirstPoints = (int)(FirstFreq/df);
@@ -156,8 +156,8 @@ public class MainActivity extends AppCompatActivity {
         xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
         xx.removeTrend(nTrendPoints);
         long lnt = xx.getFrameLength();
-        for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
-        if (p_BlockSize!=1) p_BlockSize/=2;
+        //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
+        //if (p_BlockSize!=1) p_BlockSize/=2;
         fft.setFFTParams(new FFTParams(p_BlockSize*FFT.Size0,p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
         if (!hideFFTOutput){
             addToLog("Отсчетов "+xx.getFrameLength());
@@ -298,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onFinish() {
-            calcFirstLAstLoints();
+            calcFirstLastPoints();
             inputStat.smooth(kSmooth);
             if (fullInfo)
                 showStatistic();
