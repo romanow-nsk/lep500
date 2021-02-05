@@ -18,9 +18,13 @@ public class FileDescription {
     GPSPoint gps = new GPSPoint();
     public String parseFromName() {
         try{
-            String ss = originalFileName.toUpperCase();
-            if (!ss.endsWith(".TXT"))
-                return originalFileName+": тип файла - не txt";
+            String ss = originalFileName.toLowerCase();
+            if (!ss.endsWith(".txt")){
+                byte bb[] = Base64Coder.decode(originalFileName);
+                ss = new String(bb).toUpperCase();
+                if (!ss.endsWith(".txt"))
+                    return ss+": тип файла - не txt";
+                }
             ss = ss.substring(0,ss.length()-4);
             int idx1=ss.indexOf("_");
             int idx2=ss.lastIndexOf("_");
