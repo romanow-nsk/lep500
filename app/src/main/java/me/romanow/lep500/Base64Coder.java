@@ -212,14 +212,13 @@ public class Base64Coder {
     public static void main(String argv[]){
         byte bb[]={1,2,3,4,5};
         System.out.println(encode(bb));
-        String ss="pGBYvlywWU5xX9JQ+IVSAcLuUdcWOJp1Fae1hoAekgQllsw5lg==";
+        //String ss="pGBYvlywWU5xX9JQ+IVSAcLuUdcWOJp1Fae1hoAekgQllsw5lg==";
+        String ss="ABCDJJJA";
         byte dd[] = decode(ss);
         String mm = null;
         try {
             mm = new String(dd,"UTF-16");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
+            } catch (UnsupportedEncodingException e) {}
         System.out.println(mm);
     }
 

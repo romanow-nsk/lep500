@@ -180,12 +180,14 @@ public class MainActivity extends AppCompatActivity {
                 return new Pair<>(null,null);
                 }
         //String ss = uri.getLastPathSegment();
+        String ss0 = ss;
         int idx= ss.lastIndexOf("/");
         if (idx!=-1) ss = ss.substring(idx+1);
         FileDescription description = new FileDescription(ss);
         String out = description.parseFromName();
         if (out!=null){
             addToLog("Имя файла: "+out);
+            addToLog(ss0);
             return new Pair(null,null);
             }
         addToLog(description.toString(), fullInfo ? 0 : greatTextSize);

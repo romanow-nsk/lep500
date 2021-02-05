@@ -4,6 +4,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -20,10 +21,21 @@ public class FileDescription {
         try{
             String ss = originalFileName.toLowerCase();
             if (!ss.endsWith(".txt")){
+                /*
                 byte bb[] = Base64Coder.decode(originalFileName);
-                ss = new String(bb).toUpperCase();
-                if (!ss.endsWith(".txt"))
-                    return ss+": тип файла - не txt";
+                String zz="";
+                try {
+                    ss = new String(bb,"UTF-16");
+                    } catch (UnsupportedEncodingException e) {
+                        zz = "Не конвертируется\n";
+                        }
+                for (int i=0; i<bb.length;i++){
+                    zz+=String.format("%x ",bb[i] & 0x0FF);
+                    if ((i+1)%10==0)
+                        zz+="\n";
+                    }
+                */
+                return originalFileName + " - тип файла - не txt";
                 }
             ss = ss.substring(0,ss.length()-4);
             int idx1=ss.indexOf("_");
@@ -46,5 +58,9 @@ public class FileDescription {
         }
     public FileDescription(String fname){
         originalFileName = fname;
+        }
+    public static void main(String ss[]){
+        FileDescription ff= new FileDescription("AAAAAAAAaaaaaaaa");
+        System.out.println(ff.parseFromName());
         }
     }
