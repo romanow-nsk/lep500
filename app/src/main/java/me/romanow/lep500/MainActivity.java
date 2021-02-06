@@ -2,6 +2,7 @@ package me.romanow.lep500;
 
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -13,6 +14,7 @@ import com.jjoe64.graphview.LineGraphView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.provider.OpenableColumns;
 import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.View;
@@ -146,6 +148,28 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, resultCode);
         }
 
+
+    public String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                    }
+                } finally { cursor.close(); }
+            }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1){
+                result = result.substring(cut + 1);
+                }
+            }
+        return result;
+    }
+
+
     public void processInputStream(InputStream is) throws Throwable{
         FFTAudioTextFile xx = new FFTAudioTextFile();
         xx.setnPoints(set.nTrendPoints);
@@ -169,8 +193,13 @@ public class MainActivity extends AppCompatActivity {
         fft.fftDirect(xx,back);
         }
 
+
+
+
     public Pair<InputStream,FileDescription> openSelected(Intent data) throws FileNotFoundException {
         Uri uri = data.getData();
+        String ss = getFileName(uri);
+        /*
         String ss = uri.getEncodedPath();
         try {
             ss = URLDecoder.decode( ss, "UTF-8" );
@@ -179,15 +208,14 @@ public class MainActivity extends AppCompatActivity {
                 addToLog(ss);
                 return new Pair<>(null,null);
                 }
-        //String ss = uri.getLastPathSegment();
         String ss0 = ss;
         int idx= ss.lastIndexOf("/");
         if (idx!=-1) ss = ss.substring(idx+1);
+         */
         FileDescription description = new FileDescription(ss);
         String out = description.parseFromName();
         if (out!=null){
             addToLog("Имя файла: "+out);
-            addToLog(ss0);
             return new Pair(null,null);
             }
         addToLog(description.toString(), fullInfo ? 0 : greatTextSize);
