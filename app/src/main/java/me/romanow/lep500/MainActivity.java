@@ -27,8 +27,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.apache.commons.math3.geometry.euclidean.twod.Line;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,8 +35,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
@@ -52,27 +48,26 @@ public class MainActivity extends AppCompatActivity {
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
     LEP500Settings set = new LEP500Settings();
-    private final boolean  p_LogFreq=false;
-    private final boolean  p_Compress=false;
+    //-------------- Постоянные параметры snn-core ---------------------------------------
+    private final boolean  p_Compress=false;        // Нет компрессии
     private final int  compressLevel=0;
-    private final int  p_SubToneCount=1;
-    private final int greatTextSize=20;     // Кпупный шрифт
-    private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
-    private int noFirstPoints=20;           // Отрезать точек справа и слева
-    private int noLastPoints=1000;
-    private float kMultiple=3.0f;
-    private float kAmpl=1f;
+    private final int greatTextSize=20;             // Крупный шрифт
+    private final float kMultiple=3.0f;
+    private final float kAmpl=1f;
     private final int KF100=FFT.sizeHZ/100;
     private final int MiddleMode=0x01;
     private final int DispMode=0x02;
     private final int MiddleColor = 0x0000FF00;
     private final int DispColor = 0x000000FF;
     private final int GraphBackColor = 0x00A0C0C0;
+    final static String archiveFile="LEP500Archive.json";
+    //------------------------------------------------------------------------------------
+    private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
+    private int noFirstPoints=20;           // Отрезать точек справа и слева
+    private int noLastPoints=1000;
     private boolean fullInfo=false;
     private boolean hideFFTOutput=false;
     private DataDesription archive = new DataDesription();
-    //--------------------------------------------------------------------------
-    final static String archiveFile="LEP500Archive.json";
     //----------------------------------------------------------------------------
     private LinearLayout log;
     private ScrollView scroll;
@@ -178,17 +173,15 @@ public class MainActivity extends AppCompatActivity {
         long lnt = xx.getFrameLength();
         //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
         //if (p_BlockSize!=1) p_BlockSize/=2;
-        fft.setFFTParams(new FFTParams(set.p_BlockSize*FFT.Size0,set.p_OverProc, p_LogFreq,p_SubToneCount, false, false,false,0,kMultiple));
+        FFTParams params = new FFTParams().W(set.p_BlockSize*FFT.Size0).procOver(set.p_OverProc).
+                FFTWindowReduce(false).p_Cohleogram(false).p_GPU(false).compressMode(false).
+                winMode(set.winFun);
         if (!hideFFTOutput){
             addToLog("Отсчетов "+xx.getFrameLength());
             addToLog("Кадр: "+set.p_BlockSize*FFT.Size0);
             addToLog("Перекрытие: "+set.p_OverProc);
             addToLog("Дискретность: "+String.format("%5.4f",100./(set.p_BlockSize*FFT.Size0))+" гц");
             }
-        fft.setLogFreqMode(p_LogFreq);
-        fft.setCompressMode(p_Compress);
-        fft.setCompressGrade(compressLevel);
-        fft.setKAmpl(kAmpl);
         inputStat.reset();
         fft.fftDirect(xx,back);
         }

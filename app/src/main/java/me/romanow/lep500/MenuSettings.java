@@ -6,6 +6,10 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.*;
 
+import java.util.ArrayList;
+
+import romanow.snn_simulator.fft.FFT;
+
 public class MenuSettings{
     private AlertDialog myDlg=null;
     private boolean wasChanged=false;
@@ -38,6 +42,30 @@ public class MenuSettings{
         });
         return xx;
         }
+    private LinearLayout createListBox(String name, final ArrayList<String> values, int idx, final ListBoxListener lsn){
+        LinearLayout xx=(LinearLayout)base.getLayoutInflater().inflate(R.layout.settings_item_list, null);
+        xx.setPadding(5, 5, 5, 5);
+        final TextView tt=(TextView) xx.findViewById(R.id.dialog_settings_value);
+        tt.setText(""+values.get(idx));
+        TextView img=(TextView)xx.findViewById(R.id.dialog_settings_name);
+        img.setText(name);
+        img.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new ListBoxDialog(base,values,"Функ.окна", new ListBoxListener(){
+                    @Override
+                    public void onSelect(int index) {
+                        lsn.onSelect(index);
+                        tt.setText(""+values.get(index));
+                        }
+                    @Override
+                    public void onLongSelect(int index) {}
+                }).create();
+            }
+        });
+        img.setClickable(true);
+        return xx;
+    }
     private MainActivity base;
     private void settingsChanged(){
         base.saveSettings();
@@ -129,6 +157,16 @@ public class MenuSettings{
                         base.popupInfo("Формат числа");}
                 }
             });
+            trmain.addView(layout);
+            layout = createListBox("Функ.окна", FFT.winFuncList, base.set.winFun, new ListBoxListener() {
+                @Override
+                public void onSelect(int index) {
+                    base.set.winFun = index;
+                    settingsChanged();
+                    }
+                @Override
+                public void onLongSelect(int index) {}
+                });
             trmain.addView(layout);
             myDlg.setView(lrr);
             myDlg.show();
