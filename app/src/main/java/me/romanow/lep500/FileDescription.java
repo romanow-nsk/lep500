@@ -4,13 +4,9 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.io.UnsupportedEncodingException;
-import java.text.ParseException;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import romanow.snn_simulator.fft.FFTAudioTextFile;
 
-public class FileDescription {
+public class FileDescription extends FFTAudioTextFile {
     DateTime createDate = new DateTime();
     String lepNumber="";            // Номер опоры
     String srcNumber="";            // Номер датчика

@@ -37,4 +37,9 @@
         android:orderInCategory="108"
         android:title="@string/action_settings"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_bluetooth"
+        android:orderInCategory="108"
+        android:title="Принять по BlueTooth"
+        app:showAsAction="never" />
 </menu>

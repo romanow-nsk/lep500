@@ -1,6 +1,14 @@
 package me.romanow.lep500;
 
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.net.Uri;
@@ -15,7 +23,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.provider.OpenableColumns;
-import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Menu;
@@ -32,10 +39,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.UUID;
 
 import romanow.snn_simulator.fft.FFT;
 import romanow.snn_simulator.fft.FFTAudioTextFile;
@@ -73,6 +83,12 @@ public class MainActivity extends AppCompatActivity {
     private ScrollView scroll;
     private final int CHOOSE_RESULT=100;
     private final int CHOOSE_RESULT_COPY=101;
+    private final int REQUEST_ENABLE_BT=102;
+    private final String BT_OWN_NAME="LEP500";
+    //private final String BT_SENSOR_NAME="LEP500_SENSOR";
+    private final String BT_SENSOR_NAME="Xperia E3";
+    private final int BT_DISCOVERY_TIME_IN_SEC=300;
+    private final String  uuidString  = "94811ed3-051c-44a6-98a9-59ef7ce1b004";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +102,14 @@ public class MainActivity extends AppCompatActivity {
             scroll = (ScrollView)findViewById(R.id.scroll);
             loadSettings();
             } catch (Exception ee){ addToLog(createFatalMessage(ee,10));}
+        // Регистрируем BroadcastReceiver
+        IntentFilter filter=new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(btReceiver, filter);// Не забудьте снять регистрацию в onDestroy
+        }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(btReceiver);
         }
 
     public void scrollDown(){
@@ -189,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public Pair<InputStream,FileDescription> openSelected(Intent data) throws FileNotFoundException {
+    public Pair<InputStream, FileDescription> openSelected(Intent data) throws FileNotFoundException {
         Uri uri = data.getData();
         String ss = getFileName(uri);
         /*
@@ -220,6 +244,9 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode != RESULT_OK) return;
         String path     = "";
         try {
+            if(requestCode == REQUEST_ENABLE_BT) {
+                addToLog("BlueTooth включен, повторите команду");
+                }
             if(requestCode == CHOOSE_RESULT) {
                 InputStream is = openSelected(data).o1;
                 if (is==null)
@@ -227,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
                 processInputStream(is);
                 }
             if(requestCode == CHOOSE_RESULT_COPY) {
-                final Pair<InputStream,FileDescription> pp = openSelected(data);
+                final Pair<InputStream, FileDescription> pp = openSelected(data);
                 final InputStream is = pp.o1;
                 if (is==null)
                     return;
@@ -509,6 +536,10 @@ public class MainActivity extends AppCompatActivity {
             deleteDialog();
             return true;
             }
+        if (id == R.id.action_bluetooth) {
+            procBlueTooth();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
         }
 
@@ -613,4 +644,102 @@ public class MainActivity extends AppCompatActivity {
                 archive.fileList.add(dd);
         }
     }
-}
+    //----------------------------------------------------------------------------------------------
+    public void procBlueTooth(){
+        BluetoothAdapter bluetooth= BluetoothAdapter.getDefaultAdapter();
+        if(bluetooth==null) {
+            addToLog("Нет модуля BlueTooth");
+            return;
+            }
+        if (!bluetooth.isEnabled()) {
+            // Bluetooth выключен. Предложим пользователю включить его.
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            return;
+            }
+        bluetooth.setName(BT_OWN_NAME);
+        int btState= bluetooth.getState();
+        if (btState==BluetoothAdapter.STATE_ON)
+            addToLog("Состояние BlueTooth: включен");
+        if (btState==BluetoothAdapter.STATE_TURNING_ON)
+            addToLog("Состояние BlueTooth: включается");
+        if (btState==BluetoothAdapter.STATE_OFF)
+            addToLog("Состояние BlueTooth: выключен");
+        if (btState==BluetoothAdapter.STATE_TURNING_OFF)
+            addToLog("Состояние BlueTooth: выключается");
+        BluetoothDevice sensor = null;
+        Set<BluetoothDevice> pairedDevices= bluetooth.getBondedDevices();
+        if (pairedDevices.size()==0){
+            addToLog("Сканирование BlueTooth и включение видимости");
+            bluetooth.startDiscovery();
+            Intent discoverableIntent=new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,BT_DISCOVERY_TIME_IN_SEC);
+            startActivity(discoverableIntent);
+            return;
+            }
+        for(BluetoothDevice device: pairedDevices){
+            addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
+            if (device.getName().equals(BT_SENSOR_NAME))
+                sensor = device;
+            }
+        if (sensor==null){
+            addToLog("Датчик не найден");
+            return;
+            }
+        procBTConnect(sensor);
+        }
+    public void procBTConnect(BluetoothDevice device){
+        LEP500File file = new LEP500File();
+        BTReceiverClient client = new BTReceiverClient(file, device, new ValueListener() {
+            @Override
+            public void onValue(boolean bb, String ss) {
+                addToLog((bb ? "Успешно: " : "Ошибка:")+ss);
+            }
+        });
+    }
+    //----------------------------------------------------------------------------------------------
+    // Создаем BroadcastReceiver для ACTION_FOUND
+    private final BroadcastReceiver btReceiver=new BroadcastReceiver(){
+        public void onReceive(Context context, Intent intent){
+            String action= intent.getAction();
+            if(BluetoothDevice.ACTION_FOUND.equals(action)){
+                BluetoothDevice device= intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
+                if (device.getName().equals(BT_SENSOR_NAME))
+                    procBTConnect(device);
+            }
+        }
+    };
+    //----------------------------------------------------------------------------------------------
+    private class BTReceiverClient extends BTReceiver {
+        public BTReceiverClient(LEP500File file0, BluetoothDevice device0, ValueListener back0) {
+            super(UUID.fromString(uuidString),MainActivity.this, file0, device0, back0); }
+        @Override
+        public BluetoothSocket getSocket() throws Exception {
+            return device.createInsecureRfcommSocketToServiceRecord(uuid);
+            }
+        @Override
+        public void btClose() { }
+        }
+    //----------------------------------------------------------------------------------------------
+    private class BTReceiverServer extends BTReceiver {
+        BluetoothServerSocket serverSocket = null;
+        public BTReceiverServer(LEP500File file0, BluetoothDevice device0, ValueListener back0) {
+            super(UUID.fromString(uuidString),MainActivity.this, file0, device0, back0); }
+        @Override
+        public BluetoothSocket getSocket() throws Exception {
+            BluetoothServerSocket serverSocket =
+                    BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord(BT_OWN_NAME, uuid);
+            return serverSocket.accept();
+            }
+        @Override
+        public void btClose() {
+            if (serverSocket!=null) {
+                try {
+                    serverSocket.close();
+                    } catch (IOException e) {}
+                }
+            }
+        }
+    //----------------------------------------------------------------------------------------------------------------
+    }
