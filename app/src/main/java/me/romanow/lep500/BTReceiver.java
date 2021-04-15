@@ -136,8 +136,13 @@ public class BTReceiver extends Thread{
                     BTReceiver.this.notify("Устройство отключилось");
                     break;
                 default:
+                }
             }
-        }
+        @Override
+        public void onReliableWriteCompleted(BluetoothGatt gatt, int status) {
+            super.onReliableWriteCompleted(gatt, status);
+            BTReceiver.this.notify("Вывод завершен");
+            }
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             List<BluetoothGattService> services = gatt.getServices();
@@ -146,6 +151,11 @@ public class BTReceiver extends Thread{
                 for (BluetoothGattCharacteristic characteristic : service.getCharacteristics())
                     gatt.readCharacteristic(characteristic);
                 }
+            BluetoothGattCharacteristic sended = new BluetoothGattCharacteristic(services.get(2).getUuid(),BluetoothGattCharacteristic.PROPERTY_WRITE,BluetoothGattCharacteristic.PERMISSION_WRITE);
+            byte bb[] = {0,0,1,0};
+            sended.setValue(bb);
+            sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+            gatt.writeCharacteristic(sended);
             }
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic  characteristic, int status) {
