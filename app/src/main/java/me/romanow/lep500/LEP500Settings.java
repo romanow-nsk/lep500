@@ -10,4 +10,5 @@ public class LEP500Settings {
     int  p_OverProc=50;                 // Процент перекрытия окна
     int  kSmooth=30;                    // Циклов сглаживания
     int  winFun=FFT.WinModeRectangle;   // Вид функции окна
+    int  measureDuration=10;            // Время снятия вибрации в сек (1...300)
 }

@@ -27,7 +27,7 @@ public class MenuSettings{
         img.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                lsn.onValue(true,tt.getText().toString());
+                lsn.onValue(tt.getText().toString());
                 }
             });
         img.setClickable(true);
@@ -35,7 +35,7 @@ public class MenuSettings{
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId==6 || actionId==5){
-                    lsn.onValue(true, v.getText().toString());
+                    lsn.onValue(v.getText().toString());
                     }
                 return false;
             }
@@ -92,7 +92,7 @@ public class MenuSettings{
                 });
             LinearLayout layout = createItem("Частота мин.", String.format("%4.2f",base.set.FirstFreq), new ValueListener(){
                 @Override
-                public void onValue(boolean bb,String ss) {
+                public void onValue(String ss) {
                     try {
                         ss = ss.trim().replace(",",".");
                         base.set.FirstFreq=Double.parseDouble(ss);
@@ -104,7 +104,7 @@ public class MenuSettings{
             trmain.addView(layout);
             layout = createItem("Частота макс.", String.format("%4.2f",base.set.LastFreq), new ValueListener(){
                 @Override
-                public void onValue(boolean bb,String ss) {
+                public void onValue(String ss) {
                     try {
                         ss = ss.trim().replace(",",".");
                         base.set.LastFreq=Double.parseDouble(ss);
@@ -116,7 +116,7 @@ public class MenuSettings{
             trmain.addView(layout);
             layout = createItem("Блоков*1024", ""+base.set.p_BlockSize, new ValueListener(){
                 @Override
-                public void onValue(boolean bb,String ss) {
+                public void onValue(String ss) {
                     try {
                         base.set.p_BlockSize=Integer.parseInt(ss);
                         settingsChanged();
@@ -127,7 +127,7 @@ public class MenuSettings{
             trmain.addView(layout);
             layout = createItem("% перекрытия", ""+base.set.p_OverProc, new ValueListener(){
                 @Override
-                public void onValue(boolean bb,String ss) {
+                public void onValue(String ss) {
                     try {
                         base.set.p_OverProc=Integer.parseInt(ss);
                         settingsChanged();
@@ -138,7 +138,7 @@ public class MenuSettings{
             trmain.addView(layout);
             layout = createItem("Сглаживание", ""+base.set.kSmooth, new ValueListener(){
                 @Override
-                public void onValue(boolean bb,String ss) {
+                public void onValue(String ss) {
                     try {
                         base.set.kSmooth=Integer.parseInt(ss);
                         settingsChanged();
@@ -147,9 +147,20 @@ public class MenuSettings{
                 }
             });
             trmain.addView(layout);
+            layout = createItem("Измерение (сек)", ""+base.set.measureDuration, new ValueListener(){
+                @Override
+                public void onValue(String ss) {
+                    try {
+                        base.set.measureDuration=Integer.parseInt(ss);
+                        settingsChanged();
+                    } catch (Exception ee){
+                        base.popupInfo("Формат числа");}
+                        }
+            });
+            trmain.addView(layout);
             layout = createItem("ФВЧ (точек)", ""+base.set.nTrendPoints, new ValueListener(){
                 @Override
-                public void onValue(boolean bb,String ss) {
+                public void onValue(String ss) {
                     try {
                         base.set.nTrendPoints=Integer.parseInt(ss);
                         settingsChanged();

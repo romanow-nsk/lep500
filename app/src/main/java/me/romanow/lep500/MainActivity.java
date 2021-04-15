@@ -22,6 +22,7 @@ import com.jjoe64.graphview.LineGraphView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.os.ParcelUuid;
 import android.provider.OpenableColumns;
 import android.view.Gravity;
 import android.view.View;
@@ -86,10 +87,9 @@ public class MainActivity extends AppCompatActivity {
     private final int REQUEST_ENABLE_BT=102;
     private final String BT_OWN_NAME="LEP500";
     //private final String BT_SENSOR_NAME="LEP500_SENSOR";
-    private final String BT_SENSOR_NAME="Xperia E3";
+    //private final String BT_SENSOR_NAME="Xperia E3";
+    private final String BT_SENSOR_NAME="P2PSRV1";
     private final int BT_DISCOVERY_TIME_IN_SEC=300;
-    private final String  uuidString  = "94811ed3-051c-44a6-98a9-59ef7ce1b004";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -686,17 +686,24 @@ public class MainActivity extends AppCompatActivity {
             addToLog("Датчик не найден");
             return;
             }
+        bluetooth.cancelDiscovery();
         procBTConnect(sensor);
         }
     public void procBTConnect(BluetoothDevice device){
+        addToLog("Выбран: "+device.getName()+" "+device.getAddress());
+        ParcelUuid ss[] = device.getUuids();
         LEP500File file = new LEP500File();
-        BTReceiverClient client = new BTReceiverClient(file, device, new ValueListener() {
+        BTReceiver client = new BTReceiver(this,file, device, new BTListener() {
             @Override
-            public void onValue(boolean bb, String ss) {
-                addToLog((bb ? "Успешно: " : "Ошибка:")+ss);
-            }
-        });
-    }
+            public void notify(String ss) {
+                addToLog(ss);
+                }
+            @Override
+            public void onReceive(short[] data) {
+               addToLog("Принят блок: "+data.length);
+               }
+            });
+        }
     //----------------------------------------------------------------------------------------------
     // Создаем BroadcastReceiver для ACTION_FOUND
     private final BroadcastReceiver btReceiver=new BroadcastReceiver(){
@@ -711,35 +718,4 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     //----------------------------------------------------------------------------------------------
-    private class BTReceiverClient extends BTReceiver {
-        public BTReceiverClient(LEP500File file0, BluetoothDevice device0, ValueListener back0) {
-            super(UUID.fromString(uuidString),MainActivity.this, file0, device0, back0); }
-        @Override
-        public BluetoothSocket getSocket() throws Exception {
-            return device.createInsecureRfcommSocketToServiceRecord(uuid);
-            }
-        @Override
-        public void btClose() { }
-        }
-    //----------------------------------------------------------------------------------------------
-    private class BTReceiverServer extends BTReceiver {
-        BluetoothServerSocket serverSocket = null;
-        public BTReceiverServer(LEP500File file0, BluetoothDevice device0, ValueListener back0) {
-            super(UUID.fromString(uuidString),MainActivity.this, file0, device0, back0); }
-        @Override
-        public BluetoothSocket getSocket() throws Exception {
-            BluetoothServerSocket serverSocket =
-                    BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord(BT_OWN_NAME, uuid);
-            return serverSocket.accept();
-            }
-        @Override
-        public void btClose() {
-            if (serverSocket!=null) {
-                try {
-                    serverSocket.close();
-                    } catch (IOException e) {}
-                }
-            }
-        }
-    //----------------------------------------------------------------------------------------------------------------
     }
