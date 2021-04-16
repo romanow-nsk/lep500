@@ -3,8 +3,6 @@ package me.romanow.lep500;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -40,13 +38,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Set;
-import java.util.UUID;
 
 import romanow.snn_simulator.fft.FFT;
 import romanow.snn_simulator.fft.FFTAudioTextFile;
@@ -90,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
     //private final String BT_SENSOR_NAME="Xperia E3";
     private final String BT_SENSOR_NAME="P2PSRV1";
     private final int BT_DISCOVERY_TIME_IN_SEC=300;
+    BTReceiver client = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,11 +102,14 @@ public class MainActivity extends AppCompatActivity {
         // Регистрируем BroadcastReceiver
         IntentFilter filter=new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(btReceiver, filter);// Не забудьте снять регистрацию в onDestroy
+        procBlueTooth();            // Для отладки
         }
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(btReceiver);
+        if (client!=null)
+            client.btClose();
         }
 
     public void scrollDown(){
@@ -693,7 +693,7 @@ public class MainActivity extends AppCompatActivity {
         addToLog("Выбран: "+device.getName()+" "+device.getAddress());
         ParcelUuid ss[] = device.getUuids();
         LEP500File file = new LEP500File();
-        BTReceiver client = new BTReceiver(this,file, device, new BTListener() {
+        client = new BTReceiver(this,file, device, new BTListener() {
             @Override
             public void notify(String ss) {
                 addToLog(ss);
