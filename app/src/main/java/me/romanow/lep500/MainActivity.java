@@ -86,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
     //private final String BT_SENSOR_NAME="Xperia E3";
     private final String BT_SENSOR_NAME="P2PSRV1";
     private final int BT_DISCOVERY_TIME_IN_SEC=300;
+    private boolean BLEisOn=false;
     BTReceiver client = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,14 +103,13 @@ public class MainActivity extends AppCompatActivity {
         // Регистрируем BroadcastReceiver
         IntentFilter filter=new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(btReceiver, filter);// Не забудьте снять регистрацию в onDestroy
-        procBlueTooth();            // Для отладки
+        blueToothOn();            // Для отладки
         }
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(btReceiver);
-        if (client!=null)
-            client.btClose();
+        blueToothOff();
         }
 
     public void scrollDown(){
@@ -536,8 +536,16 @@ public class MainActivity extends AppCompatActivity {
             deleteDialog();
             return true;
             }
-        if (id == R.id.action_bluetooth) {
-            procBlueTooth();
+        if (id == R.id.action_bluetooth_on) {
+            blueToothOn();
+            return true;
+            }
+        if (id == R.id.action_bluetooth_off) {
+            blueToothOff();
+            return true;
+            }
+        if (id == R.id.action_bluetooth_test) {
+            blueToothTest();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -645,7 +653,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     //----------------------------------------------------------------------------------------------
-    public void procBlueTooth(){
+    private boolean lampOn=false;
+    public void blueToothTest(){
+        if (!BLEisOn){
+            addToLog("BlueTooth не включен");
+            return;
+            }
+        lampOn=!lampOn;
+        client.sendCommand(0,lampOn ? 1 : 0,true);
+        }
+    public void blueToothOff(){
+        if (BLEisOn){
+            client.btClose();
+            }
+        }
+    public void blueToothOn(){
+        blueToothOff();
         BluetoothAdapter bluetooth= BluetoothAdapter.getDefaultAdapter();
         if(bluetooth==null) {
             addToLog("Нет модуля BlueTooth");
@@ -703,6 +726,7 @@ public class MainActivity extends AppCompatActivity {
                addToLog("Принят блок: "+data.length);
                }
             });
+        BLEisOn = true;
         }
     //----------------------------------------------------------------------------------------------
     // Создаем BroadcastReceiver для ACTION_FOUND

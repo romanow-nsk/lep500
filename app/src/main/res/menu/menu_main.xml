@@ -38,8 +38,18 @@
         android:title="@string/action_settings"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_bluetooth"
-        android:orderInCategory="108"
-        android:title="Принять по BlueTooth"
+        android:id="@+id/action_bluetooth_on"
+        android:orderInCategory="109"
+        android:title="Включить BLE"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_bluetooth_off"
+        android:orderInCategory="110"
+        android:title="Выключить BLE"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_bluetooth_test"
+        android:orderInCategory="111"
+        android:title="Тест BLE"
         app:showAsAction="never" />
 </menu>

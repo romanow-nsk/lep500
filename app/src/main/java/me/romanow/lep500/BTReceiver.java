@@ -53,7 +53,7 @@ public class BTReceiver{
         }
     public void btClose(){
         if (gatt!=null){
-            gatt.disconnect();
+            gatt.disconnect();      // Дальше - по событию disconnect
             }
         }
     public BTReceiver(Activity activity0, LEP500File file0, BluetoothDevice device0, BTListener back0){
@@ -67,9 +67,8 @@ public class BTReceiver{
         //notifyUUID(UUID.nameUUIDFromBytes(UUID_WRITE));
         gatt = device.connectGatt(activity, false, gattBack,TRANSPORT_LE);
         gatt.connect();
-        //gatt.discoverServices();
         }
-    public void sendCommandTest(int cmd, int param){
+    public void receiveAnswer(){
         if (gatt==null){
             notify("Сервис не подключен");
             return;
@@ -78,30 +77,36 @@ public class BTReceiver{
             notify("Сервис не найден");
             return;
             }
-        byte bb[] = new byte[2];
-        bb[0]=(byte)cmd;
-        bb[1]=(byte)param;
-        List<BluetoothGattService> services = gatt.getServices();
-        BluetoothGattCharacteristic sended = new BluetoothGattCharacteristic(UUID.fromString(UUID_WRITE_STR),BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE,BluetoothGattCharacteristic.PERMISSION_WRITE);
-        sended.setValue(bb);
-        sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-        //rwService.addCharacteristic(sended);
-        gatt.writeCharacteristic(sended);
-        notify("Передано "+cmd+" "+param);
+        byte bb[] = new byte[20];
+        BluetoothGattCharacteristic received = new BluetoothGattCharacteristic(UUID.fromString(UUID_READ_STR),BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,BluetoothGattCharacteristic.PERMISSION_READ);
+        received.setValue(bb);
+        gatt.readCharacteristic(received);
+        notify("Старт приема");
         }
     public void sendCommand(int cmd, int param){
+        sendCommand(cmd,param,false);
+        }
+    public void sendCommand(int cmd, int param, boolean test){
         if (gatt==null){
             notify("Сервис не подключен");
             return;
             }
-        byte bb[] = new byte[4];
-        bb[0]=(byte)cmd;
-        bb[1]=(byte)(cmd>>8);
-        bb[2]=(byte)param;
-        bb[3]=(byte)(param>>8);
-        BluetoothGattCharacteristic sended = new BluetoothGattCharacteristic(UUID.randomUUID(),BluetoothGattCharacteristic.WRITE_TYPE_SIGNED,BluetoothGattCharacteristic.PERMISSION_WRITE);
+        byte bb[];
+        if (!test){
+            bb = new byte[4];
+            bb[0]=(byte)cmd;
+            bb[1]=(byte)(cmd>>8);
+            bb[2]=(byte)param;
+            bb[3]=(byte)(param>>8);
+            }
+        else{
+            bb = new byte[2];
+            bb[0]=(byte)cmd;
+            bb[1]=(byte)param;
+            }
+        BluetoothGattCharacteristic sended = rwService.getCharacteristic(UUID.fromString(UUID_WRITE_STR));
         sended.setValue(bb);
-        sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_SIGNED);
+        sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
         gatt.writeCharacteristic(sended);
         notify("Передано "+cmd+" "+param);
         }
@@ -169,7 +174,16 @@ public class BTReceiver{
                 if (service.getUuid().toString().equals(UUID_SERVICE_STR)) {
                     rwService = service;
                     BTReceiver.this.notify("Найден сервис " + service.getUuid().toString() + " " + service.getType());
-                    sendCommandTest(0,1);
+                    //for(BluetoothGattCharacteristic characteristic : rwService.getCharacteristics()){
+                    //    if (characteristic.getUuid().toString().equals(UUID_READ_STR))
+                    //        procReceived(characteristic.getValue());
+                    //    }
+                    BluetoothGattCharacteristic characteristic = rwService.getCharacteristic(UUID.fromString(UUID_READ_STR));
+                    gatt.setCharacteristicNotification(characteristic, true);
+                    characteristic = rwService.getCharacteristic(UUID.fromString(UUID_WRITE_STR));
+                    gatt.setCharacteristicNotification(characteristic, true);
+                    //receiveAnswer();
+                    sendCommand(0,1,true);
                     }
                 }
             if (rwService==null)
@@ -181,14 +195,15 @@ public class BTReceiver{
             byte bb[] = characteristic.getValue();
             BTReceiver.this.notify("Принято(2): "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
             procReceived(bb);
-            sendCommandTest(0,1);
+            sendCommand(0,1,true);
             }
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic  characteristic, int status) {
             byte bb[] = characteristic.getValue();
             BTReceiver.this.notify("Принято: "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
             procReceived(bb);
-            sendCommandTest(0,1);
+            receiveAnswer();
+            //sendCommandTest(0,1);
             }
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
@@ -234,7 +249,7 @@ public class BTReceiver{
         notify("uuid="+uuid.toString()+"\n"+Long.toHexString(uuid.getMostSignificantBits())+" "+Long.toHexString(uuid.getLeastSignificantBits()));
         }
     public void procReceived(byte dd[]) {
-        if (dd.length!=20)
+        if (dd==null || dd.length!=20)
             return;
         for(int i=0;i<10;i++)
             buffer[i]= (short)( dd[i/2] & 0x0FF | (dd[i/2+1]<<8) & 0x0FF00);
