@@ -78,7 +78,7 @@ public class BTReceiver{
             return;
             }
         byte bb[] = new byte[20];
-        BluetoothGattCharacteristic received = new BluetoothGattCharacteristic(UUID.fromString(UUID_READ_STR),BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,BluetoothGattCharacteristic.PERMISSION_READ);
+        BluetoothGattCharacteristic received = rwService.getCharacteristic(UUID.fromString(UUID_READ_STR));
         received.setValue(bb);
         gatt.readCharacteristic(received);
         notify("Старт приема");
@@ -182,8 +182,7 @@ public class BTReceiver{
                     gatt.setCharacteristicNotification(characteristic, true);
                     characteristic = rwService.getCharacteristic(UUID.fromString(UUID_WRITE_STR));
                     gatt.setCharacteristicNotification(characteristic, true);
-                    //receiveAnswer();
-                    sendCommand(0,1,true);
+                    receiveAnswer();
                     }
                 }
             if (rwService==null)
