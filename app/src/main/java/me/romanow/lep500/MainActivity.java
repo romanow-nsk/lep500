@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean fullInfo=false;
     private boolean hideFFTOutput=false;
     private DataDesription archive = new DataDesription();
+    private double freqStep = 0;
     //----------------------------------------------------------------------------
     private LinearLayout log;
     private ScrollView scroll;
@@ -228,11 +229,14 @@ public class MainActivity extends AppCompatActivity {
         FFTParams params = new FFTParams().W(set.p_BlockSize*FFT.Size0).procOver(set.p_OverProc).
                 FFTWindowReduce(false).p_Cohleogram(false).p_GPU(false).compressMode(false).
                 winMode(set.winFun);
+        fft.setFFTParams(params);
+        fft.calcFFTParams();
+        freqStep = fft.getStepHZLinear()/KF100;
         if (!hideFFTOutput){
             addToLog("Отсчетов "+xx.getFrameLength());
             addToLog("Кадр: "+set.p_BlockSize*FFT.Size0);
             addToLog("Перекрытие: "+set.p_OverProc);
-            addToLog("Дискретность: "+String.format("%5.4f",100./(set.p_BlockSize*FFT.Size0))+" гц");
+            addToLog("Дискретность: "+String.format("%5.4f",freqStep)+" гц");
             }
         inputStat.reset();
         fft.fftDirect(xx,back);
@@ -342,13 +346,13 @@ public class MainActivity extends AppCompatActivity {
         Extreme extreme = list.get(0);
         double val0 = mode ? extreme.value : extreme.diff;
         addToLog(mode ? "По амплитуде" : "По спаду");
-        addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц",extreme.value,extreme.diff,extreme.freq/KF100));
+        addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц",extreme.value,extreme.diff,extreme.idx*freqStep));
         double sum=0;
         for(int i=1; i<count;i++){
             extreme = list.get(i);
             double proc = (mode ? extreme.value : extreme.diff)*100/val0;
             sum+=proc;
-            addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц %d%%",extreme.value,extreme.diff, extreme.freq/KF100,(int)proc));
+            addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц %d%%",extreme.value,extreme.diff, extreme.idx*freqStep,(int)proc));
             }
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
@@ -363,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
             addToLog("Экстремумов не найдено",greatTextSize);
             return;
             }
-        addToLog(String.format("Основная частота=%6.4f гц",list.get(0).freq/KF100),greatTextSize);
+        addToLog(String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize);
         }
     //--------------------------------------------------------------------------
     private FFTCallBack back = new FFTCallBack(){
