@@ -1,5 +1,9 @@
 package me.romanow.lep500;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import java.util.Date;
 
 public class GPSPoint {
@@ -36,7 +40,7 @@ public class GPSPoint {
         state = exact ? GeoGPS : GeoNet;
         gpsTime = timeMs;
         }
-    public long elapsedTimeInSec(){ return new Date().getTime()-gpsTime; }
+    public long elapsedTimeInSec(){ return new DateTime().getMillis()-gpsTime; }
     public GPSPoint(String crd,boolean exact){
         setCoord(crd,exact);
         }
@@ -54,7 +58,7 @@ public class GPSPoint {
     public GPSPoint  copy(){
         GPSPoint out = new GPSPoint(geoy,geox,true);
         out.state = state;
-        out.gpsTime = new Date().getTime();
+        out.gpsTime = new DateTime().getMillis();
         return out;
         }
     //----------- Конвертирование в формат ggmm.xxxxx (градусы-минуты-дробная часть)
@@ -104,8 +108,9 @@ public class GPSPoint {
         }
     public String toString(){
         if (state== GeoNone)
-            return "";
-        return toStr(geoy)+","+toStr(geox)+"["+gpsTime+"]";
+            return "Нет геоданных";
+        DateTimeFormatter dtf = DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss");
+        return (state==GeoGPS ? "gps " : "net ")+toStr(geoy)+","+toStr(geox)+" "+dtf.print(gpsTime);
         }
     public String toShortString(){
         if (state== GeoNone)
@@ -134,37 +139,8 @@ public class GPSPoint {
             setCoord(v1, v2,exact);
             } catch(Throwable ee){ state= GeoNone; }
         }
-    //------------------------------------------------------------------------------------------------------------------
-    /*
-    @Override
-    public void putData(String prefix, org.bson.Document document, int level, I_MongoDB mongo) throws UniException {
-        putDBValues(prefix,document,level,mongo);
-        gpsTime.putData("a_",document,0,null);
-    }
-    @Override
-    public void getData(String prefix, org.bson.Document res, int level, I_MongoDB mongo) throws UniException {
-        getDBValues(prefix,res);
-        gpsTime.getData("a_",res, 0, null);
-        }
-    //----------------- Импорт/экспорт Excel ------------------------------------------------------------
-    @Override
-    public void getData(Row row, ExCellCounter cnt) throws UniException{
-        getXMLValues(row, cnt);
-        gpsTime.getData(row, cnt);
-        }
-    @Override
-    public void putData(Row row, ExCellCounter cnt) throws UniException{
-        putXMLValues(row, cnt);
-        gpsTime.putData(row, cnt);
-        }
-    @Override
-    public void putHeader(String prefix, ArrayList<String> list) throws UniException{
-        putXMLHeader(prefix,list);
-        gpsTime.putHeader("a_",list);
-    }
-    */
     public String toStringValue() {
-        return toShortString()+"|"+gpsTime;
+        return toShortString()+"|"+new DateTime(gpsTime);
         }
     public void parseValue(String ss) throws Exception {
         int idx=ss.indexOf("|");

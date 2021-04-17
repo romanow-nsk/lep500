@@ -11,4 +11,7 @@ public class LEP500Settings {
     int  kSmooth=30;                    // Циклов сглаживания
     int  winFun=FFT.WinModeRectangle;   // Вид функции окна
     int  measureDuration=10;            // Время снятия вибрации в сек (1...300)
+    String measureGroup="СМ-300";       // Подпись группы
+    String measureTitle="Опора 125";    // Подпись опоры
+    int measureCounter=1;               // Счетчик измерения
 }
