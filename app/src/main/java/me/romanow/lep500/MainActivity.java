@@ -2,6 +2,11 @@ package me.romanow.lep500;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +24,8 @@ import com.jjoe64.graphview.LineGraphView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.os.Handler;
+import android.os.ParcelUuid;
 import android.provider.OpenableColumns;
 import android.view.Gravity;
 import android.view.View;
@@ -40,7 +47,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import romanow.snn_simulator.fft.FFT;
 import romanow.snn_simulator.fft.FFTAudioTextFile;
@@ -93,9 +102,12 @@ public class MainActivity extends AppCompatActivity {
     private final String BT_OWN_NAME="LEP500";
     //private final String BT_SENSOR_NAME="LEP500_SENSOR";
     //private final String BT_SENSOR_NAME="Xperia E3";
-    private final String BT_SENSOR_NAME="P2PSRV1";
+    //private final String BT_SENSOR_NAME="P2PSRV1";
+    private final String BT_SENSOR_NAME="VIBR_SENS";
     private final int BT_DISCOVERY_TIME_IN_SEC=300;
+    private final int BT_SCANNING_TIME_IN_SEC=30;
     private BTReceiver btReceiver = null;
+    private BluetoothLeScanner scanner = null;
     private EventListener logEvent = new EventListener() {
         @Override
         public void onEvent(String ss) {
@@ -573,20 +585,38 @@ public class MainActivity extends AppCompatActivity {
             return true;
             }
         if (id == R.id.action_bluetooth_off) {
+            btReceiver.deviceOff();
             btReceiver.blueToothOff();
             return true;
             }
-        if (id == R.id.action_bluetooth_test) {
-            btReceiver.blueToothTest();
+        if (id == R.id.action_bluetooth_measure_stop) {
+            btReceiver.stopMeasure();
             return true;
             }
-        if (id == R.id.action_bluetooth_measure) {
+        if (id == R.id.action_bluetooth_measure_test) {
             LEP500File file = new LEP500File(set,1,gpsService.lastGPS());
             try {
-                btReceiver.startMeasure(file);
+                btReceiver.startMeasure(file,true);
                 } catch (Exception e) {
                     addToLog("Ошибка выполнения команды: "+e.toString());
                     }
+            return true;
+            }
+        if (id == R.id.action_bluetooth_measure_start) {
+            LEP500File file = new LEP500File(set,1,gpsService.lastGPS());
+            try {
+                btReceiver.startMeasure(file,false);
+            } catch (Exception e) {
+                addToLog("Ошибка выполнения команды: "+e.toString());
+                }
+            return true;
+            }
+        if (id == R.id.action_bluetooth_battery_level) {
+            try {
+                btReceiver.getChargeLevel();
+                } catch (Exception e) {
+                addToLog("Ошибка выполнения команды: "+e.toString());
+                }
             return true;
             }
         return super.onOptionsItemSelected(item);
@@ -706,19 +736,47 @@ public class MainActivity extends AppCompatActivity {
             }
     };
     //----------------------------------------------------------------------------------------------
+    private final ScanCallback scanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            BluetoothDevice device = result.getDevice();
+            addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
+            if (device.getName().equals(BT_SENSOR_NAME)){
+                addToLog("BlueTooth: "+device.getName()+" подключение");
+                scanner.stopScan(scanCallback);
+                scannerHandler.removeCallbacks(scanerTimeOut);
+                btReceiver.blueToothOn(device);
+                }
+            }
+        @Override
+        public void onBatchScanResults(List<ScanResult> results) {}
+        @Override
+        public void onScanFailed(int errorCode) {}
+        };
+    //----------------------------------------------------------------------------------------------
+    Handler scannerHandler = new Handler();
+    Runnable scanerTimeOut = new Runnable() {
+        @Override
+        public void run() {
+            addToLog("Тайм-аут сканирования");
+            if (scanner!=null)
+                scanner.stopScan(scanCallback);
+        }
+    };
+    //----------------------------------------------------------------------------------------------
     public void blueToothOn(){
         btReceiver.blueToothOff();
         BluetoothAdapter bluetooth= BluetoothAdapter.getDefaultAdapter();
         if(bluetooth==null) {
             addToLog("Нет модуля BlueTooth");
             return;
-        }
+            }
         if (!bluetooth.isEnabled()) {
             // Bluetooth выключен. Предложим пользователю включить его.
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             return;
-        }
+            }
         bluetooth.setName(BT_OWN_NAME);
         int btState= bluetooth.getState();
         if (btState==BluetoothAdapter.STATE_ON)
@@ -729,6 +787,47 @@ public class MainActivity extends AppCompatActivity {
             addToLog("Состояние BlueTooth: выключен");
         if (btState==BluetoothAdapter.STATE_TURNING_OFF)
             addToLog("Состояние BlueTooth: выключается");
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        scanner = adapter.getBluetoothLeScanner();
+        if (scanner != null) {
+            /* ----------------- Сканирование по UUID
+            UUID BLP_SERVICE_UUID = UUID.fromString(BTReceiver.UUID_SERVICE_STR);
+            UUID[] serviceUUIDs = new UUID[]{BLP_SERVICE_UUID};
+            List<ScanFilter> filters;
+            filters = null;
+            if(serviceUUIDs != null) {
+                filters = new ArrayList<>();
+                for (UUID serviceUUID : serviceUUIDs) {
+                    ScanFilter filter = new ScanFilter.Builder()
+                            .setServiceUuid(new ParcelUuid(serviceUUID))
+                            .build();
+                    filters.add(filter);
+                    }
+                }
+             */
+            //--------------- Сканирование по имени
+            String[] names = new String[]{BT_SENSOR_NAME};
+            List<ScanFilter> filters = new ArrayList<>();
+            for (String name : names) {
+                ScanFilter filter = new ScanFilter.Builder().setDeviceName(name).build();
+                filters.add(filter);
+                }
+            ScanSettings scanSettings = new ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                    .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                    .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
+                    .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
+                    .setReportDelay(0L)
+                    .build();
+            scanner.startScan(filters, scanSettings, scanCallback);
+            addToLog("Сканирование началось");
+            scannerHandler.postDelayed(scanerTimeOut,BT_SCANNING_TIME_IN_SEC*1000);
+            }
+        else{
+            addToLog("Сканер BleuTooth не получен");
+            return;
+            }
+        /*
         BluetoothDevice sensor = null;
         Set<BluetoothDevice> pairedDevices= bluetooth.getBondedDevices();
         if (pairedDevices.size()==0){
@@ -750,6 +849,7 @@ public class MainActivity extends AppCompatActivity {
         }
         bluetooth.cancelDiscovery();
         btReceiver.blueToothOn(sensor);
+        */
     }
 
 }

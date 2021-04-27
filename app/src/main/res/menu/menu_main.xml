@@ -48,13 +48,23 @@
         android:title="Выключить BLE"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_bluetooth_test"
-        android:orderInCategory="111"
-        android:title="Тест BLE"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/action_bluetooth_measure"
+        android:id="@+id/action_bluetooth_measure_start"
         android:orderInCategory="112"
         android:title="Измерения"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_bluetooth_measure_stop"
+        android:orderInCategory="113"
+        android:title="Прервать"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_bluetooth_measure_test"
+        android:orderInCategory="114"
+        android:title="Образец"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_bluetooth_battery_level"
+        android:orderInCategory="115"
+        android:title="Уровень заряда"
         app:showAsAction="never" />
 </menu>
