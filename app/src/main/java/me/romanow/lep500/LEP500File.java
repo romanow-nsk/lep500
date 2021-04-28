@@ -13,13 +13,13 @@ import java.io.OutputStreamWriter;
 
 public class LEP500File{
     private DateTime createDate = new DateTime();
-    private int    sensorNumber;                  // Номер датчика
+    private String  sensorName;                  // Номер датчика
     private LEP500Settings settings;
     private GPSPoint gps;
     private short data[];
-    public LEP500File(LEP500Settings settings0, int sensorNumber0, GPSPoint gps0){
+    public LEP500File(LEP500Settings settings0, String sensorName0, GPSPoint gps0){
         settings = settings0;
-        sensorNumber = sensorNumber0;
+        sensorName = sensorName0;
         gps = gps0;
         }
     public LEP500Settings getSettings(){
@@ -32,7 +32,7 @@ public class LEP500File{
     public String createOriginalFileName(){
         DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyyMMdd");
         DateTimeFormatter dtf2 = DateTimeFormat.forPattern("HHmmss");
-        return dtf.print(createDate)+"T"+dtf2.print(createDate)+"_"+ settings.measureCounter+"-"+sensorNumber+"_"+settings.measureGroup+".txt";
+        return dtf.print(createDate)+"T"+dtf2.print(createDate)+"_"+ settings.measureCounter+"-"+sensorName+"_"+settings.measureGroup+".txt";
         }
     public void createTestMeasure(){
         int v0=1000;
@@ -78,7 +78,7 @@ public class LEP500File{
             os.write("100000");
             os.newLine();
             //10 канал-1 баланс=128 температура=8C
-            os.write("канал-"+sensorNumber);
+            os.write("канал-"+sensorName);
             os.newLine();
             os.write(""+data.length);
             os.newLine();

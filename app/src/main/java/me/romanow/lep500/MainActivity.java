@@ -22,15 +22,12 @@ import com.jjoe64.graphview.GraphViewSeries;
 import com.jjoe64.graphview.LineGraphView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 
 import android.os.Handler;
 import android.os.ParcelUuid;
 import android.provider.OpenableColumns;
 import android.view.Gravity;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -48,7 +45,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import romanow.snn_simulator.fft.FFT;
@@ -75,16 +71,6 @@ public class MainActivity extends AppCompatActivity {
     private final int DispColor = 0x000000FF;
     private final int GraphBackColor = 0x00A0C0C0;
     final static String archiveFile="LEP500Archive.json";
-    private GPSService gpsService = new GPSService(new GPSListener() {
-        @Override
-        public void onEvent(String ss) {
-            addToLog(ss);
-            }
-        @Override
-        public void onGPS(GPSPoint gpsPoint) {
-            addToLog(gpsPoint.toString());
-            }
-        });
     //------------------------------------------------------------------------------------
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
@@ -100,28 +86,49 @@ public class MainActivity extends AppCompatActivity {
     private final int CHOOSE_RESULT_COPY=101;
     private final int REQUEST_ENABLE_BT=102;
     private final String BT_OWN_NAME="LEP500";
-    //private final String BT_SENSOR_NAME="LEP500_SENSOR";
-    //private final String BT_SENSOR_NAME="Xperia E3";
-    //private final String BT_SENSOR_NAME="P2PSRV1";
-    private final String BT_SENSOR_NAME="VIBR_SENS";
+    private final String BT_SENSOR_NAME_PREFIX="VIBR_SENS";
     private final int BT_DISCOVERY_TIME_IN_SEC=300;
     private final int BT_SCANNING_TIME_IN_SEC=30;
-    private BTReceiver btReceiver = null;
     private BluetoothLeScanner scanner = null;
+    private ImageView BTState;
+    private ImageView MenuButton;
+    private ImageView GPSState;
+    private ArrayList<BTReceiver> sensorList = new ArrayList<>();
+    //--------------------------------------------------------------------------
+    private GPSService gpsService = new GPSService(new GPSListener() {
+        @Override
+        public void onEvent(String ss) {
+            addToLog(ss);
+        }
+        @Override
+        public void onGPS(GPSPoint gpsPoint) {
+            int state = gpsPoint.state();
+            if (state == GPSPoint.GeoNone)
+                GPSState.setImageResource(R.drawable.gps_off);
+            if (state ==GPSPoint.GeoNet)
+                GPSState.setImageResource(R.drawable.gsm);
+            if (state ==GPSPoint.GeoGPS)
+                GPSState.setImageResource(R.drawable.gps);
+            }
+        });
     private EventListener logEvent = new EventListener() {
         @Override
         public void onEvent(String ss) {
             addToLog(ss);
             }
         };
+    //------------------------------------------------------------------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             setContentView(R.layout.activity_main);
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            setSupportActionBar(toolbar);
+            //Toolbar toolbar = findViewById(R.id.toolbar);
+            //setSupportActionBar(toolbar);
+            MenuButton = (ImageView) findViewById(R.id.headerMenu);
+            BTState = (ImageView) findViewById(R.id.headerState);
+            GPSState = (ImageView) findViewById(R.id.headerGPS);
             log = (LinearLayout) findViewById(R.id.log);
             scroll = (ScrollView)findViewById(R.id.scroll);
             loadSettings();
@@ -130,29 +137,53 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter=new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(blueToothReceiver, filter);// Не забудьте снять регистрацию в onDestroy
         gpsService.startService(this);
-        btReceiver = new BTReceiver(this, new BTListener() {
+        MenuButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void notify(String ss) {
-                addToLog(ss);
-                }
-            @Override
-            public void onReceive(LEP500File file){
-                file.save(androidFileDirectory(), logEvent);
-                addToLog("Записано: "+file.createOriginalFileName()+" ["+file.getData().length+"]");
-                set.measureCounter++;           // Номер следующего измерения
-                saveSettings();
-                }
-            });
+            public void onClick(View v) {
+                new ListBoxDialog(MainActivity.this, MenuItems, "Меню", new ListBoxListener() {
+                    @Override
+                    public void onSelect(int index) {
+                        procMenuItem(index);
+                    }
+
+                    @Override
+                    public void onLongSelect(int index) {
+
+                    }
+                }).create();
+            }
+        });
         //blueToothOn();            // Для отладки
+        }
+    private void blueToothOff(){
+        for(BTReceiver receiver : sensorList)
+            receiver.blueToothOff();
+        sensorList.clear();
         }
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(blueToothReceiver);
-        btReceiver.blueToothOff();
+        blueToothOff();
         gpsService.stopService();
         }
-
+    private BTListener btBack = new BTListener() {
+        @Override
+        public void notify(BTReceiver sensor, String ss) {
+            addToLog(ss);
+            }
+        @Override
+        public void onReceive(BTReceiver sensor, LEP500File file){
+            file.save(androidFileDirectory(), logEvent);
+            addToLog("Записано: "+file.createOriginalFileName()+" ["+file.getData().length+"]");
+            set.measureCounter++;           // Номер следующего измерения
+            saveSettings();
+            }
+        @Override
+        public void onState(BTReceiver sensor, int state) {
+            setBTState(state);
+            }
+        };
     public void scrollDown(){
         scroll.post(new Runnable() {
             @Override
@@ -253,9 +284,6 @@ public class MainActivity extends AppCompatActivity {
         inputStat.reset();
         fft.fftDirect(xx,back);
         }
-
-
-
 
     public Pair<InputStream, FileDescription> openSelected(Intent data) throws FileNotFoundException {
         Uri uri = data.getData();
@@ -420,16 +448,17 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onMessage(String mes) {
-            addToLog(mes);
+            if (!hideFFTOutput)
+                addToLog(mes);
             }
     };
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
+    //@Override
+    //public boolean onCreateOptionsMenu(Menu menu) {
+    //    // Inflate the menu; this adds items to the action bar if it is present.
+    //    getMenuInflater().inflate(R.menu.menu_main, menu);
+    //    return true;
+    //}
 
     //--------------------------------------------------------------------------------------------------------
     public void popupToast(int viewId, String ss) {
@@ -545,89 +574,90 @@ public class MainActivity extends AppCompatActivity {
             }
     }
     //------------------------------------------------------------------------
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_fullOutSide) {
-            fullInfo=true;
-            hideFFTOutput=false;
-            preloadFromText(CHOOSE_RESULT);
-            return true;
-            }
-        if (id == R.id.action_shortOutSide) {
-            fullInfo=false;
-            hideFFTOutput=true;
-            preloadFromText(CHOOSE_RESULT);
-            return true;
-            }
-        if (id == R.id.action_settings) {
-            new SettingsMenu(this);
-            return true;
-            }
-        if (id == R.id.action_addToArchive) {
-            preloadFromText(CHOOSE_RESULT_COPY);
-            return true;
-            }
-        if (id == R.id.action_clear) {
-            log.removeAllViews();
-            return true;
-            }
-        if (id == R.id.action_dir) {
-            selectFromArchive();
-            return true;
-            }
-        if (id == R.id.action_delete) {
-            deleteDialog();
-            return true;
-            }
-        if (id == R.id.action_convert) {
-            convertDialog();
-            return true;
-        }
-        if (id == R.id.action_bluetooth_on) {
-            blueToothOn();
-            return true;
-            }
-        if (id == R.id.action_bluetooth_off) {
-            btReceiver.deviceOff();
-            btReceiver.blueToothOff();
-            return true;
-            }
-        if (id == R.id.action_bluetooth_measure_stop) {
-            btReceiver.stopMeasure();
-            return true;
-            }
-        if (id == R.id.action_bluetooth_measure_test) {
-            LEP500File file = new LEP500File(set,1,gpsService.lastGPS());
-            try {
-                btReceiver.startMeasure(file,true);
-                } catch (Exception e) {
-                    addToLog("Ошибка выполнения команды: "+e.toString());
-                    }
-            return true;
-            }
-        if (id == R.id.action_bluetooth_measure_start) {
-            LEP500File file = new LEP500File(set,1,gpsService.lastGPS());
-            try {
-                btReceiver.startMeasure(file,false);
-            } catch (Exception e) {
-                addToLog("Ошибка выполнения команды: "+e.toString());
+    private String[] MenuItems = {
+            "Архив",
+            "Файл в архив",
+            "Файл кратко",
+            "Файл подробно",
+            "Удалить из архива",
+            "Очистить ленту",
+            "Настройки",
+            "Поиск-старт",
+            "Поиск-стоп",
+            "Выключить датчик",
+            "Измерение",
+            "Прервать",
+            "Образец",
+            "Уровень заряда",
+            "Конверировать в wave"
+            };
+    public void procMenuItem(int index) {
+        switch (index){
+case 0:
+        selectFromArchive();
+        break;
+case 1: preloadFromText(CHOOSE_RESULT_COPY);
+        break;
+case 2: fullInfo=false;
+        hideFFTOutput=true;
+        preloadFromText(CHOOSE_RESULT);
+        break;
+case 3: fullInfo=true;
+        hideFFTOutput=false;
+        preloadFromText(CHOOSE_RESULT);
+        break;
+case 4: deleteDialog();
+        break;
+case 5: log.removeAllViews();
+        break;
+case 6: new SettingsMenu(this);
+        break;
+case 7: blueToothOn();
+        break;
+case 8:
+        if (scanner!=null)
+            scanner.stopScan(scanCallback);
+        break;
+case 9: selectSensor(new SensorListener() {
+            @Override
+            public void omSensor(BTReceiver receiver) {
+                receiver.deviceOff();
+                receiver.blueToothOff();
                 }
-            return true;
-            }
-        if (id == R.id.action_bluetooth_battery_level) {
-            try {
-                btReceiver.getChargeLevel();
-                } catch (Exception e) {
-                addToLog("Ошибка выполнения команды: "+e.toString());
+            });
+        break;
+case 10:selectSensor(new SensorListener() {
+            @Override
+            public void omSensor(BTReceiver receiver) {
+                String name = receiver.getSensorName().replace("_","-");
+                LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
+                receiver.startMeasure(file,false);
                 }
-            return true;
-            }
-        return super.onOptionsItemSelected(item);
+            });
+        break;
+case 11:selectSensor(new SensorListener() {
+            @Override
+            public void omSensor(BTReceiver receiver) {
+                receiver.stopMeasure();
+                }
+            });
+        break;
+case 12:LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
+        BTReceiver receiver = new BTReceiver(this,btBack);
+        receiver.startMeasure(file2,true);
+        break;
+case 13:selectSensor(new SensorListener() {
+            @Override
+            public void omSensor(BTReceiver receiver) {
+                receiver.getChargeLevel();
+                }
+            });
+        break;
+case 14:convertDialog();
+        break;
         }
+    }
+    //----------------------------------------------------------------------------------------------
     public void deleteDialog(){
         createArchive();
         ArrayList<String> out = new ArrayList<>();
@@ -754,8 +784,11 @@ public class MainActivity extends AppCompatActivity {
             if(BluetoothDevice.ACTION_FOUND.equals(action)){
                 BluetoothDevice device= intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
-                if (device.getName().equals(BT_SENSOR_NAME))
-                    btReceiver.blueToothOn(device);
+                if (device.getName().startsWith(BT_SENSOR_NAME_PREFIX)){
+                    BTReceiver receiver = new BTReceiver(MainActivity.this,btBack);
+                    receiver.blueToothOn(device);
+                    sensorList.add(receiver);
+                    }
                 }
             }
     };
@@ -764,12 +797,16 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             BluetoothDevice device = result.getDevice();
+            if (device.getName()==null)
+                return;
             addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
-            if (device.getName().equals(BT_SENSOR_NAME)){
+            if (device.getName().startsWith(BT_SENSOR_NAME_PREFIX)){
                 addToLog("BlueTooth: "+device.getName()+" подключение");
                 scanner.stopScan(scanCallback);
                 scannerHandler.removeCallbacks(scanerTimeOut);
-                btReceiver.blueToothOn(device);
+                BTReceiver receiver = new BTReceiver(MainActivity.this,btBack);
+                receiver.blueToothOn(device);
+                sensorList.add(receiver);
                 }
             }
         @Override
@@ -788,11 +825,23 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     //----------------------------------------------------------------------------------------------
+    public final static int BT_Gray=0;
+    public final static int BT_Red=1;
+    public final static int BT_Yellow=2;
+    public final static int BT_Green=3;
+    public final static int BT_LightRed=4;
+    public final static int BT_LightGreen=5;
+    private final static int BTStateID[]={R.drawable.status_gray,R.drawable.status_red,R.drawable.status_yellow,
+            R.drawable.status_green,R.drawable.status_light_red,R.drawable.status_light_green};
+    private void setBTState(int state){
+        BTState.setImageResource(BTStateID[state]);
+        }
     public void blueToothOn(){
-        btReceiver.blueToothOff();
+        blueToothOff();
         BluetoothAdapter bluetooth= BluetoothAdapter.getDefaultAdapter();
         if(bluetooth==null) {
             addToLog("Нет модуля BlueTooth");
+            setBTState(BT_Gray);
             return;
             }
         if (!bluetooth.isEnabled()) {
@@ -803,38 +852,42 @@ public class MainActivity extends AppCompatActivity {
             }
         bluetooth.setName(BT_OWN_NAME);
         int btState= bluetooth.getState();
-        if (btState==BluetoothAdapter.STATE_ON)
+        if (btState==BluetoothAdapter.STATE_ON){
             addToLog("Состояние BlueTooth: включен");
-        if (btState==BluetoothAdapter.STATE_TURNING_ON)
+            setBTState(BT_Red);
+            }
+        if (btState==BluetoothAdapter.STATE_TURNING_ON){
             addToLog("Состояние BlueTooth: включается");
-        if (btState==BluetoothAdapter.STATE_OFF)
+            setBTState(BT_LightRed);
+            }
+        if (btState==BluetoothAdapter.STATE_OFF){
             addToLog("Состояние BlueTooth: выключен");
-        if (btState==BluetoothAdapter.STATE_TURNING_OFF)
+            setBTState(BT_Gray);
+            }
+        if (btState==BluetoothAdapter.STATE_TURNING_OFF){
             addToLog("Состояние BlueTooth: выключается");
+            setBTState(BT_LightRed);
+            }
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         scanner = adapter.getBluetoothLeScanner();
         if (scanner != null) {
-            /* ----------------- Сканирование по UUID
-            UUID BLP_SERVICE_UUID = UUID.fromString(BTReceiver.UUID_SERVICE_STR);
-            UUID[] serviceUUIDs = new UUID[]{BLP_SERVICE_UUID};
-            List<ScanFilter> filters;
-            filters = null;
-            if(serviceUUIDs != null) {
-                filters = new ArrayList<>();
-                for (UUID serviceUUID : serviceUUIDs) {
-                    ScanFilter filter = new ScanFilter.Builder()
-                            .setServiceUuid(new ParcelUuid(serviceUUID))
-                            .build();
+            sensorList.clear();
+            List<ScanFilter> filters = new ArrayList<>();
+            int filterMode=0;
+            // ----------------- Сканирование по UUID
+            if (filterMode==1){
+                UUID BLP_SERVICE_UUID = UUID.fromString(BTReceiver.UUID_SERVICE_STR);
+                ScanFilter filter = new ScanFilter.Builder()
+                    .setServiceUuid(new ParcelUuid(BLP_SERVICE_UUID)).build();
+                filters.add(filter);
+                }
+            // --------------- Сканирование по имени
+            if (filterMode==2) {
+                String[] names = new String[]{BT_SENSOR_NAME_PREFIX};
+                for (String name : names) {
+                    ScanFilter filter = new ScanFilter.Builder().setDeviceName(name).build();
                     filters.add(filter);
                     }
-                }
-             */
-            //--------------- Сканирование по имени
-            String[] names = new String[]{BT_SENSOR_NAME};
-            List<ScanFilter> filters = new ArrayList<>();
-            for (String name : names) {
-                ScanFilter filter = new ScanFilter.Builder().setDeviceName(name).build();
-                filters.add(filter);
                 }
             ScanSettings scanSettings = new ScanSettings.Builder()
                     .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
@@ -849,31 +902,22 @@ public class MainActivity extends AppCompatActivity {
             }
         else{
             addToLog("Сканер BleuTooth не получен");
+            setBTState(BT_Red);
             return;
             }
-        /*
-        BluetoothDevice sensor = null;
-        Set<BluetoothDevice> pairedDevices= bluetooth.getBondedDevices();
-        if (pairedDevices.size()==0){
-            addToLog("Сканирование BlueTooth и включение видимости");
-            bluetooth.startDiscovery();
-            Intent discoverableIntent=new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,BT_DISCOVERY_TIME_IN_SEC);
-            startActivity(discoverableIntent);
-            return;
         }
-        for(BluetoothDevice device: pairedDevices){
-            addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
-            if (device.getName().equals(BT_SENSOR_NAME))
-                sensor = device;
+    private void selectSensor(final SensorListener listener){
+        ArrayList<String> sensorNames = new ArrayList<>();
+        for(BTReceiver receiver : sensorList)
+            sensorNames.add(receiver.getSensorName());
+            new ListBoxDialog(this, sensorNames, "Датчик", new ListBoxListener() {
+                @Override
+                public void onSelect(int index) {
+                    listener.omSensor(sensorList.get(index));
+                    }
+                @Override
+                public void onLongSelect(int index) { }
+                }
+            ).create();
         }
-        if (sensor==null){
-            addToLog("Датчик не найден");
-            return;
-        }
-        bluetooth.cancelDiscovery();
-        btReceiver.blueToothOn(sensor);
-        */
-    }
-
 }

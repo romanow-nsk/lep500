@@ -44,6 +44,9 @@ public class BTReceiver{
     private short data[]=null;
     private BluetoothGatt gatt=null;
     private BluetoothGattService rwService=null;
+    private String sensorName="";
+    //----------------------------------------------------------------------------------------------
+    public String getSensorName() { return sensorName; }
     public synchronized boolean isWorking() {
         return data != null;
         }
@@ -109,14 +112,15 @@ public class BTReceiver{
         sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
         gatt.writeCharacteristic(sended);
         notify("Передано "+cmd+" "+param);
+        back.onState(this, MainActivity.BT_LightGreen);
         }
-    public synchronized void startMeasure(LEP500File file0,boolean tested) throws Exception {
+    public synchronized void startMeasure(LEP500File file0,boolean tested) {
         startMeasure(file0,-1,tested);
         }
-    public synchronized void getChargeLevel() throws Exception {
+    public synchronized void getChargeLevel()  {
         sendCommand(SENSOR_CMD_CHARGE_LEVEL,0);
         }
-    public synchronized void startMeasure(LEP500File file0, int duration,boolean tested) throws Exception {
+    public synchronized void startMeasure(LEP500File file0, int duration,boolean tested) {
         if (isWorking()){
             notify("Измерение уже выполняется");
             return;
@@ -136,7 +140,7 @@ public class BTReceiver{
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    back.onReceive(file);
+                    back.onReceive(BTReceiver.this, file);
                     }
                 });
             }
@@ -144,8 +148,6 @@ public class BTReceiver{
             sendCommand(SENSOR_CMD_START,duration);
             receiveAnswer();
             }
-        //---------------------------
-        //sendCommand(SENSOR_CMD_START,duration);
         }
     public void deviceOff(){
         data = null;
@@ -163,7 +165,7 @@ public class BTReceiver{
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                back.notify(mes);
+                back.notify(BTReceiver.this,mes);
                     }
             });
         }
@@ -183,11 +185,13 @@ public class BTReceiver{
                     else{
                         BTReceiver.this.notify("Ошибка подключения status="+status);
                         btClose();
-                        }
+                        back.onState(BTReceiver.this,MainActivity.BT_Red);
+                    }
                     break;
                 case BluetoothProfile.STATE_DISCONNECTED:
                     gatt.close();           // Дождаться события от disconnect !!!!!!!!!
                     gatt=null;
+                    back.onState(BTReceiver.this,MainActivity.BT_Gray);
                     break;
                 default:
                 }
@@ -208,6 +212,7 @@ public class BTReceiver{
                     BTReceiver.this.notify("Найден сервис " + service.getUuid().toString() + " " + service.getType());
                     //receiveAnswer();
                     startNotify();
+                    back.onState(BTReceiver.this,MainActivity.BT_Green);
                     }
                 }
             if (rwService==null)
@@ -219,24 +224,21 @@ public class BTReceiver{
             byte bb[] = characteristic.getValue();
             characteristic.setValue(new byte[20]);
             //BTReceiver.this.notify("Принято(2): "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
+            back.onState(BTReceiver.this,MainActivity.BT_Green);
             procReceived(bb);
             }
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic  characteristic, int status) {
             byte bb[] = characteristic.getValue();
-            //BTReceiver.this.notify("Принято: "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
             characteristic.setValue(new byte[20]);
             procReceived(bb);
-            //if (procReceived(bb))
-            //    receiveAnswer();        // По окончании приема, если надо следующий
+            back.onState(BTReceiver.this,MainActivity.BT_Green);
             }
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
             BTReceiver.this.notify("Передано status="+status);
-            //int cmd = characteristic.getValue()[0];
-            //if (cmd==SENSOR_CMD_CHARGE_LEVEL || cmd==SENSOR_CMD_START)
-            //    receiveAnswer();
+            back.onState(BTReceiver.this,MainActivity.BT_Green);
             }
         //------------------------------------------------------- прочее -----------------------------------
         @Override
@@ -300,12 +302,13 @@ case SENSOR_ANS_STOP:
             activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            back.onReceive(file);
+                            back.onReceive(BTReceiver.this,file);
                         }
                     });
             return false;
 case SENSOR_ANS_ERROR:
             notify("Ошибка исполнения команды: "+errorCodes[buffer[1]]);
+            back.onState(BTReceiver.this,MainActivity.BT_LightGreen);
             return false;
 case SENSOR_ANS_DATA:
             for(int i=buffer[1],j=2; j<10; i++,j++)
@@ -319,12 +322,15 @@ case SENSOR_ANS_DATA:
         if (BLEisOn){
             btClose();
             }
+        back.onState(BTReceiver.this,MainActivity.BT_Gray);
         }
     public void blueToothOn(BluetoothDevice device0){
         device = device0;
+        sensorName = device.getName();
         notify("Выбран: "+device.getName()+" "+device.getAddress());
         gatt = device.connectGatt(activity, false, gattBack,TRANSPORT_LE);
         gatt.connect();
+        back.onState(BTReceiver.this,MainActivity.BT_Yellow);
         BLEisOn = true;
         }
     public boolean isBlueToothOn(){

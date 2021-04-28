@@ -50,7 +50,7 @@ public class FileDescription extends FFTAudioTextFile {
                 }
             }
     public String toString(){
-        return "Опора "+lepNumber+" датчик "+srcNumber+"\n"+createDate.toString(DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss"));
+        return lepNumber+" "+srcNumber+"\n"+createDate.toString(DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss"));
         }
     public FileDescription(String fname){
         originalFileName = fname;

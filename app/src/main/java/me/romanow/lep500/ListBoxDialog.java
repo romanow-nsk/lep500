@@ -32,6 +32,14 @@ public class ListBoxDialog {
         list = list0;
         ls = ls0;
         }
+    public ListBoxDialog(Activity activity0,String list0[],String title0,ListBoxListener ls0){
+        activity = activity0;
+        title = title0;
+        list = new ArrayList<>();
+        for(String ss:list0)
+            list.add(ss);
+        ls = ls0;
+    }
     public ListBoxDialog setAutoClose(boolean autoClose) {
         this.autoClose = autoClose;
         return this;
