@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 saveSettings();
                 }
             });
-        blueToothOn();            // Для отладки
+        //blueToothOn();            // Для отладки
         }
     @Override
     protected void onDestroy() {
@@ -389,6 +389,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFinish() {
             calcFirstLastPoints();
+            if (inputStat.getCount()==0){
+                addToLog("Настройки: короткий период измерений/много блоков");
+                return;
+                }
             inputStat.smooth(set.kSmooth);
             if (fullInfo)
                 showStatistic();
