@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private final int GraphBackColor = 0x00A0C0C0;
     final static String archiveFile="LEP500Archive.json";
     //------------------------------------------------------------------------------------
+    public final int SensorMaxNumber=4;
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
     private int noLastPoints=1000;
@@ -90,7 +91,9 @@ public class MainActivity extends AppCompatActivity {
     private final int BT_DISCOVERY_TIME_IN_SEC=300;
     private final int BT_SCANNING_TIME_IN_SEC=30;
     private BluetoothLeScanner scanner = null;
-    private ImageView BTState;
+    private ImageView BTState[]=new ImageView[4];
+    private TextView BTStateText[]=new TextView[4];
+    private ImageView BTScanerState;
     private ImageView MenuButton;
     private ImageView GPSState;
     private ArrayList<BTReceiver> sensorList = new ArrayList<>();
@@ -127,7 +130,15 @@ public class MainActivity extends AppCompatActivity {
             //Toolbar toolbar = findViewById(R.id.toolbar);
             //setSupportActionBar(toolbar);
             MenuButton = (ImageView) findViewById(R.id.headerMenu);
-            BTState = (ImageView) findViewById(R.id.headerState);
+            BTState[0] = (ImageView) findViewById(R.id.headerState0);
+            BTState[1] = (ImageView) findViewById(R.id.headerState1);
+            BTState[2] = (ImageView) findViewById(R.id.headerState2);
+            BTState[3] = (ImageView) findViewById(R.id.headerState3);
+            BTScanerState  = (ImageView) findViewById(R.id.headerScanerState);
+            BTStateText[0] = (TextView) findViewById(R.id.headerStateText0);
+            BTStateText[1] = (TextView) findViewById(R.id.headerStateText1);
+            BTStateText[2] = (TextView) findViewById(R.id.headerStateText2);
+            BTStateText[3] = (TextView) findViewById(R.id.headerStateText3);
             GPSState = (ImageView) findViewById(R.id.headerGPS);
             log = (LinearLayout) findViewById(R.id.log);
             scroll = (ScrollView)findViewById(R.id.scroll);
@@ -153,12 +164,14 @@ public class MainActivity extends AppCompatActivity {
                 }).create();
             }
         });
+        addToLog("Звенящие опоры России",25);
         //blueToothOn();            // Для отладки
         }
     private void blueToothOff(){
         for(BTReceiver receiver : sensorList)
             receiver.blueToothOff();
         sensorList.clear();
+        setBTScanerState(BT_Gray);
         }
     @Override
     protected void onDestroy() {
@@ -181,9 +194,14 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onState(BTReceiver sensor, int state) {
-            setBTState(state);
+            setBTState(sensor,state);
             }
-        };
+
+        @Override
+        public void onStateText(BTReceiver sensor, String text) {
+            setBTStateText(sensor,text);
+            }
+    };
     public void scrollDown(){
         scroll.post(new Runnable() {
             @Override
@@ -582,14 +600,14 @@ public class MainActivity extends AppCompatActivity {
             "Удалить из архива",
             "Очистить ленту",
             "Настройки",
-            "Поиск-старт",
-            "Поиск-стоп",
+            "Сканер-старт",
+            "Сканер-стоп",
             "Выключить датчик",
             "Измерение",
             "Прервать",
             "Образец",
             "Уровень заряда",
-            "Конверировать в wave"
+            "Конвертировать в wave"
             };
     public void procMenuItem(int index) {
         switch (index){
@@ -617,6 +635,7 @@ case 7: blueToothOn();
 case 8:
         if (scanner!=null)
             scanner.stopScan(scanCallback);
+        setBTScanerState(BT_Gray);
         break;
 case 9: selectSensor(new SensorListener() {
             @Override
@@ -685,6 +704,7 @@ case 14:convertDialog();
                 String pathName = androidFileDirectory()+"/"+archive.fileList.get(index).originalFileName;
                 FFTAudioTextFile xx = new FFTAudioTextFile();
                 xx.setnPoints(set.nTrendPoints);
+                hideFFTOutput=false;
                 xx.convertToWave(pathName, back);
                 }
             @Override
@@ -822,6 +842,7 @@ case 14:convertDialog();
             addToLog("Тайм-аут сканирования");
             if (scanner!=null)
                 scanner.stopScan(scanCallback);
+            setBTScanerState(BT_Gray);
         }
     };
     //----------------------------------------------------------------------------------------------
@@ -833,15 +854,28 @@ case 14:convertDialog();
     public final static int BT_LightGreen=5;
     private final static int BTStateID[]={R.drawable.status_gray,R.drawable.status_red,R.drawable.status_yellow,
             R.drawable.status_green,R.drawable.status_light_red,R.drawable.status_light_green};
-    private void setBTState(int state){
-        BTState.setImageResource(BTStateID[state]);
+    private void setBTScanerState(int state){
+        BTScanerState.setImageResource(BTStateID[state]);
+        }
+    private void setBTState(BTReceiver receiver,int state){
+        int idx = sensorList.indexOf(receiver);
+        if (idx!=-1 && idx < SensorMaxNumber)
+            BTState[idx].setImageResource(BTStateID[state]);
+        }
+    private void setBTStateText(BTReceiver receiver,String text){
+        int idx = sensorList.indexOf(receiver);
+        if (idx!=-1 && idx < SensorMaxNumber)
+            BTStateText[idx].setText(text);
+    }
+    private void setBTState(ImageView view,int state){
+        view.setImageResource(BTStateID[state]);
         }
     public void blueToothOn(){
         blueToothOff();
         BluetoothAdapter bluetooth= BluetoothAdapter.getDefaultAdapter();
         if(bluetooth==null) {
             addToLog("Нет модуля BlueTooth");
-            setBTState(BT_Gray);
+            setBTScanerState(BT_Red);
             return;
             }
         if (!bluetooth.isEnabled()) {
@@ -854,19 +888,19 @@ case 14:convertDialog();
         int btState= bluetooth.getState();
         if (btState==BluetoothAdapter.STATE_ON){
             addToLog("Состояние BlueTooth: включен");
-            setBTState(BT_Red);
+            setBTScanerState(BT_Green);
             }
         if (btState==BluetoothAdapter.STATE_TURNING_ON){
             addToLog("Состояние BlueTooth: включается");
-            setBTState(BT_LightRed);
+            setBTScanerState(BT_Yellow);
             }
         if (btState==BluetoothAdapter.STATE_OFF){
             addToLog("Состояние BlueTooth: выключен");
-            setBTState(BT_Gray);
+            setBTScanerState(BT_Red);
             }
         if (btState==BluetoothAdapter.STATE_TURNING_OFF){
             addToLog("Состояние BlueTooth: выключается");
-            setBTState(BT_LightRed);
+            setBTScanerState(BT_Yellow);
             }
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         scanner = adapter.getBluetoothLeScanner();
@@ -902,11 +936,15 @@ case 14:convertDialog();
             }
         else{
             addToLog("Сканер BleuTooth не получен");
-            setBTState(BT_Red);
+            setBTScanerState(BT_Red);
             return;
             }
         }
     private void selectSensor(final SensorListener listener){
+        if (sensorList.size()==0){
+            addToLog("Нет включенных датчиков");
+            return;
+            }
         ArrayList<String> sensorNames = new ArrayList<>();
         for(BTReceiver receiver : sensorList)
             sensorNames.add(receiver.getSensorName());

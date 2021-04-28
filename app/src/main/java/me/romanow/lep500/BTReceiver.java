@@ -112,7 +112,7 @@ public class BTReceiver{
         sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
         gatt.writeCharacteristic(sended);
         notify("Передано "+cmd+" "+param);
-        back.onState(this, MainActivity.BT_LightGreen);
+        back.onState(this, MainActivity.BT_Yellow);
         }
     public synchronized void startMeasure(LEP500File file0,boolean tested) {
         startMeasure(file0,-1,tested);
@@ -200,6 +200,7 @@ public class BTReceiver{
         public void onReliableWriteCompleted(BluetoothGatt gatt, int status) {
             super.onReliableWriteCompleted(gatt, status);
             BTReceiver.this.notify("Вывод завершен");
+            back.onState(BTReceiver.this,MainActivity.BT_Green);
             }
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
@@ -283,7 +284,7 @@ public class BTReceiver{
             return false;
         for(int i=0;i<10;i++)
             buffer[i]= (short)( dd[2*i] & 0x0FF | (dd[2*i+1]<<8) & 0x0FF00);
-        notify("Принято: "+buffer[0]+":"+buffer[1]);
+        //notify("Принято: "+buffer[0]+":"+buffer[1]);
         switch (buffer[0]){
 case SENSOR_ANS_CHARGE_LEVEL:
             notify("Заряд батареи: "+buffer[1]+" %");
@@ -303,16 +304,18 @@ case SENSOR_ANS_STOP:
                         @Override
                         public void run() {
                             back.onReceive(BTReceiver.this,file);
+                            back.onStateText(BTReceiver.this,"");
                         }
                     });
             return false;
 case SENSOR_ANS_ERROR:
             notify("Ошибка исполнения команды: "+errorCodes[buffer[1]]);
-            back.onState(BTReceiver.this,MainActivity.BT_LightGreen);
+            back.onState(BTReceiver.this,MainActivity.BT_LightRed);
             return false;
 case SENSOR_ANS_DATA:
             for(int i=buffer[1],j=2; j<10; i++,j++)
                 data[i]=buffer[j];
+            back.onStateText(this,""+buffer[1]*100/data.length+" %");
             return true;
             }
     return false;
