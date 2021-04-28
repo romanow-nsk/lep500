@@ -420,8 +420,7 @@ public class MainActivity extends AppCompatActivity {
             }
         @Override
         public void onMessage(String mes) {
-            //if (!hideFFTOutput)
-            //    addToLog(mes);
+            addToLog(mes);
             }
     };
 
@@ -584,6 +583,10 @@ public class MainActivity extends AppCompatActivity {
             deleteDialog();
             return true;
             }
+        if (id == R.id.action_convert) {
+            convertDialog();
+            return true;
+        }
         if (id == R.id.action_bluetooth_on) {
             blueToothOn();
             return true;
@@ -636,6 +639,23 @@ public class MainActivity extends AppCompatActivity {
                 File file = new File(androidFileDirectory()+"/"+archive.fileList.get(index).originalFileName);
                 file.delete();
                 createArchive();
+                }
+            @Override
+            public void onLongSelect(int index) {}
+            }).create();
+        }
+    public void convertDialog(){
+        createArchive();
+        ArrayList<String> out = new ArrayList<>();
+        for(FileDescription ff : archive.fileList)
+            out.add(ff.toString());
+        new ListBoxDialog(this, out, "Конвертировать в wave", new ListBoxListener() {
+            @Override
+            public void onSelect(int index) {
+                String pathName = androidFileDirectory()+"/"+archive.fileList.get(index).originalFileName;
+                FFTAudioTextFile xx = new FFTAudioTextFile();
+                xx.setnPoints(set.nTrendPoints);
+                xx.convertToWave(pathName, back);
                 }
             @Override
             public void onLongSelect(int index) {}

@@ -67,4 +67,9 @@
         android:orderInCategory="115"
         android:title="Уровень заряда"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_convert"
+        android:orderInCategory="116"
+        android:title="Конвертировать в WAVE"
+        app:showAsAction="never" />
 </menu>
