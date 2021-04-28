@@ -31,11 +31,10 @@ public class BTReceiver{
     private final int SENSOR_CMD_OFF=8;             // Команда - отключить сенсор
     private final int SENSOR_ANS_DATA=3;            // Ответ - блок данных, параметр = смещение
     private final int SENSOR_ANS_STOP=4;            // Ответ - завершение измерения, параметр 0 - прервано, иначе- кол-во байтов
-    private final int SENSOR_ANS_CHARGE_LEVEL=6;    // Ответ - параметр = заряд батереи
+    private final int SENSOR_ANS_CHARGE_LEVEL=7;    // Ответ - параметр = заряд батереи
     private final int SENSOR_ANS_ERROR=5;           // Ответ - параметр = код ошибки
     private final int WAIT_FOR_READ=10;             // Цикл засыпания при отсутствии данных
     //==============================================================================================
-    private boolean lampOn=false;
     private boolean BLEisOn=false;
     private LEP500File file;
     private BTListener back;
@@ -61,7 +60,7 @@ public class BTReceiver{
         //notifyUUID(UUID.nameUUIDFromBytes(UUID_READ));
         //notifyUUID(UUID.nameUUIDFromBytes(UUID_WRITE));
         }
-    private void receiveAnswer(int size){
+    private void startNotify(){
         if (gatt==null){
             notify("Сервис не подключен");
             return;
@@ -70,33 +69,41 @@ public class BTReceiver{
             notify("Сервис не найден");
             return;
             }
-        byte bb[] = new byte[size];
+        byte bb[] = new byte[20];
         BluetoothGattCharacteristic received = rwService.getCharacteristic(UUID.fromString(UUID_READ_STR));
         received.setValue(bb);
-        gatt.readCharacteristic(received);
-        notify("Старт приема кадра");
+        gatt.setCharacteristicNotification(received, true);
+        for (BluetoothGattDescriptor descriptor : received.getDescriptors()) {
+            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            gatt.writeDescriptor(descriptor);
+            }
+        notify("Старт уведомлений");
         }
-    public void sendCommand(int cmd, int param){
-        sendCommand(cmd,param,false);
-        }
-    public void sendCommand(int cmd, int param, boolean test){
+    private void receiveAnswer(){
         if (gatt==null){
             notify("Сервис не подключен");
             return;
             }
-        byte bb[];
-        if (!test){
-            bb = new byte[4];
-            bb[0]=(byte)cmd;
-            bb[1]=(byte)(cmd>>8);
-            bb[2]=(byte)param;
-            bb[3]=(byte)(param>>8);
+        if (rwService==null){
+            notify("Сервис не найден");
+            return;
             }
-        else{
-            bb = new byte[2];
-            bb[0]=(byte)cmd;
-            bb[1]=(byte)param;
+        byte bb[] = new byte[20];
+        BluetoothGattCharacteristic received = rwService.getCharacteristic(UUID.fromString(UUID_READ_STR));
+        received.setValue(bb);
+        gatt.readCharacteristic(received);
+        notify("Старт приема");
+        }
+    public void sendCommand(int cmd, int param){
+        if (gatt==null){
+            notify("Сервис не подключен");
+            return;
             }
+        byte bb[] = new byte[4];
+        bb[0]=(byte)cmd;
+        bb[1]=(byte)(cmd>>8);
+        bb[2]=(byte)param;
+        bb[3]=(byte)(param>>8);
         BluetoothGattCharacteristic sended = rwService.getCharacteristic(UUID.fromString(UUID_WRITE_STR));
         sended.setValue(bb);
         sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
@@ -108,7 +115,6 @@ public class BTReceiver{
         }
     public synchronized void getChargeLevel() throws Exception {
         sendCommand(SENSOR_CMD_CHARGE_LEVEL,0);
-        receiveAnswer(4);
         }
     public synchronized void startMeasure(LEP500File file0, int duration,boolean tested) throws Exception {
         if (isWorking()){
@@ -136,7 +142,7 @@ public class BTReceiver{
             }
         else{
             sendCommand(SENSOR_CMD_START,duration);
-            receiveAnswer(20);
+            receiveAnswer();
             }
         //---------------------------
         //sendCommand(SENSOR_CMD_START,duration);
@@ -200,15 +206,8 @@ public class BTReceiver{
                 if (service.getUuid().toString().equals(UUID_SERVICE_STR)) {
                     rwService = service;
                     BTReceiver.this.notify("Найден сервис " + service.getUuid().toString() + " " + service.getType());
-                    //for(BluetoothGattCharacteristic characteristic : rwService.getCharacteristics()){
-                    //    if (characteristic.getUuid().toString().equals(UUID_READ_STR))
-                    //        procReceived(characteristic.getValue());
-                    //    }
-                    BluetoothGattCharacteristic characteristic = rwService.getCharacteristic(UUID.fromString(UUID_READ_STR));
-                    gatt.setCharacteristicNotification(characteristic, true);
-                    characteristic = rwService.getCharacteristic(UUID.fromString(UUID_WRITE_STR));
-                    gatt.setCharacteristicNotification(characteristic, true);
                     //receiveAnswer();
+                    startNotify();
                     }
                 }
             if (rwService==null)
@@ -218,20 +217,26 @@ public class BTReceiver{
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
             byte bb[] = characteristic.getValue();
-            BTReceiver.this.notify("Принято(2): "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
+            characteristic.setValue(new byte[20]);
+            //BTReceiver.this.notify("Принято(2): "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
             procReceived(bb);
-            sendCommand(0,1,true);
             }
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic  characteristic, int status) {
             byte bb[] = characteristic.getValue();
-            BTReceiver.this.notify("Принято: "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
+            //BTReceiver.this.notify("Принято: "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
+            characteristic.setValue(new byte[20]);
             procReceived(bb);
+            //if (procReceived(bb))
+            //    receiveAnswer();        // По окончании приема, если надо следующий
             }
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
             BTReceiver.this.notify("Передано status="+status);
+            //int cmd = characteristic.getValue()[0];
+            //if (cmd==SENSOR_CMD_CHARGE_LEVEL || cmd==SENSOR_CMD_START)
+            //    receiveAnswer();
             }
         //------------------------------------------------------- прочее -----------------------------------
         @Override
@@ -271,23 +276,24 @@ public class BTReceiver{
     private void notifyUUID(UUID uuid){
         notify("uuid="+uuid.toString()+"\n"+Long.toHexString(uuid.getMostSignificantBits())+" "+Long.toHexString(uuid.getLeastSignificantBits()));
         }
-    private void procReceived(byte dd[]) {
+    private boolean procReceived(byte dd[]) {
         if (dd==null || dd.length!=20)
-            return;
+            return false;
         for(int i=0;i<10;i++)
-            buffer[i]= (short)( dd[i/2] & 0x0FF | (dd[i/2+1]<<8) & 0x0FF00);
+            buffer[i]= (short)( dd[2*i] & 0x0FF | (dd[2*i+1]<<8) & 0x0FF00);
+        notify("Принято: "+buffer[0]+":"+buffer[1]);
         switch (buffer[0]){
 case SENSOR_ANS_CHARGE_LEVEL:
             notify("Заряд батареи: "+buffer[1]+" %");
-            break;
+            return false;
 case SENSOR_ANS_STOP:
             if (buffer[1]==0){
                  notify("Отмена измерения");
-                 return;
+                 return false;
                  }
-            if (buffer[1]!=data.length*2){
+            if (buffer[1]!=data.length){
                  notify("Несовпадение размера блока");
-                 return;
+                 return false;
                  }
             file.setData(data);
             data = null;
@@ -297,26 +303,18 @@ case SENSOR_ANS_STOP:
                             back.onReceive(file);
                         }
                     });
-            break;
+            return false;
 case SENSOR_ANS_ERROR:
             notify("Ошибка исполнения команды: "+errorCodes[buffer[1]]);
-            break;
+            return false;
 case SENSOR_ANS_DATA:
-            for(int i=buffer[1]/2,j=2; j<10; i++,j++)
+            for(int i=buffer[1],j=2; j<10; i++,j++)
                 data[i]=buffer[j];
-            receiveAnswer(20);
-            break;
+            return true;
             }
+    return false;
     }
 //------------------------------------------- Пользовательская часть -------------------------------
-    public void blueToothTest(){
-        if (!BLEisOn){
-            notify("BlueTooth не включен");
-            return;
-            }
-        lampOn=!lampOn;
-        sendCommand(0,lampOn ? 1 : 0,true);
-        }
     public void blueToothOff(){
         if (BLEisOn){
             btClose();
