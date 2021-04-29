@@ -280,8 +280,22 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         return result;
-    }
+        }
 
+    public void processInputStreamWave(InputStream is) throws Throwable{
+        FFTAudioTextFile xx = new FFTAudioTextFile();
+        xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
+        LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
+        LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
+        LineGraphView graphView = new LineGraphView(this,"");
+        graphView.setScalable(true);
+        graphView.setScrollable(true);
+        graphView.getGraphViewStyle().setTextSize(15);
+        panel.addView(graphView);
+        log.addView(lrr);
+        paintOne(graphView,xx.getData(),DispColor,0,0,false);
+        addToLog("");
+        }
 
     public void processInputStream(InputStream is) throws Throwable{
         FFTAudioTextFile xx = new FFTAudioTextFile();
@@ -505,17 +519,16 @@ public class MainActivity extends AppCompatActivity {
         popupToast(R.drawable.info,ss);
         }
     //--------------------------------------------------------------------------
-    public void paintOne(LineGraphView graphView,float data[], int color){
-        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length-noFirstPoints-noLastPoints];
-        for(int j=noFirstPoints;j<data.length-noLastPoints;j++){                    // Подпись значений факторов j-ой ячейки
+    public void paintOne(LineGraphView graphView,float data[], int color,int noFirst,int noLast,boolean freqMode){
+        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length-noFirst-noLast];
+        for(int j=noFirst;j<data.length-noLast;j++){                    // Подпись значений факторов j-ой ячейки
             double freq = j*50./data.length;
-            zz[j-noFirstPoints] = new GraphView.GraphViewData(freq,data[j]);
+            zz[j-noFirst] = new GraphView.GraphViewData(freqMode ? freq : j,data[j]);
             }
         GraphViewSeries series = new GraphViewSeries(zz);
         series.getStyle().color = color | 0xFF000000;
         graphView.addSeries(series);
         }
-
 
     private void addGraphView(LayerStatistic stat, int mode){
         LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
@@ -527,10 +540,11 @@ public class MainActivity extends AppCompatActivity {
         panel.addView(graphView);
         log.addView(lrr);
         if ((mode & MiddleMode)!=0)
-            paintOne(graphView,inputStat.getMids(),MiddleColor);
+            paintOne(graphView,inputStat.getMids(),MiddleColor,noFirstPoints,noFirstPoints,true);
         if ((mode & DispMode)!=0)
-            paintOne(graphView,inputStat.getDisps(),DispColor);
+            paintOne(graphView,inputStat.getDisps(),DispColor,noFirstPoints,noFirstPoints,true);
         }
+
     //--------------------------------------------------------------------------
     public final String androidFileDirectory(){
         return getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
@@ -625,11 +639,11 @@ public class MainActivity extends AppCompatActivity {
             "Добавить имя сенсора",
             "Список сенсоров",
             "Очистить список",
+            "Просмотр волны"
             };
     public void procMenuItem(int index) {
         switch (index){
-case 0:
-        selectFromArchive();
+case 0: selectFromArchive();
         break;
 case 1: preloadFromText(CHOOSE_RESULT_COPY);
         break;
@@ -711,6 +725,8 @@ case 18:set.knownSensors.clear();
         set.createMaps();
         saveSettings();
         break;
+case 19: showWavwForm();
+        break;
         }
     }
     //----------------------------------------------------------------------------------------------
@@ -749,7 +765,6 @@ case 18:set.knownSensors.clear();
         }).create();
     }
 
-
     public  void procOnClick(int index,boolean longClick){
         FileDescription fd = archive.fileList.get(index);
         String fname = fd.originalFileName;
@@ -760,16 +775,30 @@ case 18:set.knownSensors.clear();
             addToLog(fd.toString(),greatTextSize);
             processInputStream(fis);
             } catch (Throwable e) {
-            addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
+                addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
+                }
         }
-    }
+
+    public  void procWaveForm(int index,boolean longClick){
+        FileDescription fd = archive.fileList.get(index);
+        String fname = fd.originalFileName;
+        try {
+            fullInfo=longClick;
+            hideFFTOutput=!longClick;
+            FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
+            addToLog(fd.toString(),greatTextSize);
+            processInputStreamWave(fis);
+            } catch (Throwable e) {
+                addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
+                }
+        }
 
     public void selectFromArchive(){
         createArchive();
         ArrayList<String> out = new ArrayList<>();
         for(FileDescription ff : archive.fileList)
             out.add(ff.toString());
-        new ListBoxDialog(this, out, "Промотр архива", new ListBoxListener() {
+        new ListBoxDialog(this, out, "Проcмотр архива", new ListBoxListener() {
             @Override
             public void onSelect(int index) {
                 procOnClick(index,false);
@@ -779,8 +808,22 @@ case 18:set.knownSensors.clear();
                 procOnClick(index,true);
                 }
             }).create();
-    }
+        }
 
+    public void showWavwForm(){
+        createArchive();
+        ArrayList<String> out = new ArrayList<>();
+        for(FileDescription ff : archive.fileList)
+            out.add(ff.toString());
+        new ListBoxDialog(this, out, "Просмотр волны", new ListBoxListener() {
+            @Override
+            public void onSelect(int index) {
+                procWaveForm(index,false);
+                }
+            @Override
+            public void onLongSelect(int index) {}
+            }).create();
+    }
 
 
     public void addArchiveItemToLog(final FileDescription ff){
