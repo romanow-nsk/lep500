@@ -1,5 +1,8 @@
 package me.romanow.lep500;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import romanow.snn_simulator.fft.FFT;
 
 public class LEP500Settings {
@@ -14,4 +17,16 @@ public class LEP500Settings {
     String measureGroup="СМ-300";       // Подпись группы
     String measureTitle="Опора 125";    // Подпись опоры
     int measureCounter=1;               // Счетчик измерения
+    ArrayList<BTDescriptor> knownSensors=new ArrayList<>();
+    //---------------------------------------------------------------------------
+    transient HashMap<String,BTDescriptor> nameMap = new HashMap<>();
+    transient HashMap<String,BTDescriptor> addressMap = new HashMap<>();
+    public void createMaps(){
+        nameMap.clear();
+        addressMap.clear();
+        for(BTDescriptor descriptor : knownSensors){
+            nameMap.put(descriptor.btName,descriptor);
+            addressMap.put(descriptor.btMAC,descriptor);
+            }
+    }
 }

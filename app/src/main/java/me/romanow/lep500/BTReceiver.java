@@ -45,8 +45,10 @@ public class BTReceiver{
     private BluetoothGatt gatt=null;
     private BluetoothGattService rwService=null;
     private String sensorName="";
+    private String sensorMAC="";
     //----------------------------------------------------------------------------------------------
     public String getSensorName() { return sensorName; }
+    public String getSensorMAC() { return sensorMAC; }
     public synchronized boolean isWorking() {
         return data != null;
         }
@@ -330,6 +332,7 @@ case SENSOR_ANS_DATA:
     public void blueToothOn(BluetoothDevice device0){
         device = device0;
         sensorName = device.getName();
+        sensorMAC = device.getAddress();
         notify("Выбран: "+device.getName()+" "+device.getAddress());
         gatt = device.connectGatt(activity, false, gattBack,TRANSPORT_LE);
         gatt.connect();

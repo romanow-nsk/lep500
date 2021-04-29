@@ -201,6 +201,10 @@ public class MainActivity extends AppCompatActivity {
         public void onStateText(BTReceiver sensor, String text) {
             setBTStateText(sensor,text);
             }
+        @Override
+        public void onPopup(BTReceiver sensor, String text) {
+            setBTPopup(sensor,text);
+            }
     };
     public void scrollDown(){
         scroll.post(new Runnable() {
@@ -336,6 +340,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             if(requestCode == REQUEST_ENABLE_BT) {
                 addToLog("BlueTooth включен, повторите команду");
+                popupInfo("BlueTooth включен, повторите команду");
                 }
             if(requestCode == CHOOSE_RESULT) {
                 InputStream is = openSelected(data).o1;
@@ -387,7 +392,7 @@ public class MainActivity extends AppCompatActivity {
         StackTraceElement dd[] = ee.getStackTrace();
         for (int i = 0; i < dd.length && i < stackSize; i++) {
             ss += dd[i].getClassName() + "." + dd[i].getMethodName() + ":" + dd[i].getLineNumber() + "\n";
-        }
+            }
         String out = "Программная ошибка:\n" + ss;
         return out;
         }
@@ -437,6 +442,7 @@ public class MainActivity extends AppCompatActivity {
             calcFirstLastPoints();
             if (inputStat.getCount()==0){
                 addToLog("Настройки: короткий период измерений/много блоков");
+                popupInfo("Настройки: короткий период измерений/много блоков");
                 return;
                 }
             inputStat.smooth(set.kSmooth);
@@ -491,7 +497,8 @@ public class MainActivity extends AppCompatActivity {
         toastContainer.setOrientation(LinearLayout.HORIZONTAL);
         toastContainer.setGravity(Gravity.CENTER);
         toastContainer.setVerticalGravity(5);
-        toast3.setGravity(Gravity.TOP, 0, 200);
+        //toastContainer.setBackgroundResource(R.color.status_almostFree);
+        toast3.setGravity(Gravity.TOP, 0, 20);
         toast3.show();
         }
     public void popupInfo(String ss) {
@@ -542,6 +549,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ee) {
                 addToLog("Ошибка чтения архива "+ee.toString());
                 addToLog("Создан пустой");
+                popupInfo("Ошибка чтения архива,создан пустой");
                 saveArchive();
                 }
             }
@@ -559,7 +567,8 @@ public class MainActivity extends AppCompatActivity {
             out.close();
             } catch (Exception ee) {
                 addToLog("Ошибка записи архива "+ee.toString()); }
-        }
+                popupInfo("Ошибка записи архива");
+                }
     public void saveSettings() {
         try {
             Gson gson = new Gson();
@@ -573,8 +582,10 @@ public class MainActivity extends AppCompatActivity {
             out.flush();
             out.close();
         } catch (Exception ee) {
-            addToLog("Ошибка записи настроек "+ee.toString()); }
-    }
+            addToLog("Ошибка записи настроек " + ee.toString());
+            popupInfo("Ошибка записи настроек");
+            }
+        }
     public void loadSettings() {
         try {
             Gson gson = new Gson();
@@ -586,8 +597,10 @@ public class MainActivity extends AppCompatActivity {
             InputStreamReader out = new InputStreamReader(new FileInputStream(ss), "UTF-8");
             set = (LEP500Settings) gson.fromJson(out, LEP500Settings.class);
             out.close();
+            set.createMaps();
         } catch (Exception ee) {
             addToLog("Ошибка чтения настроек (сброшены)");
+            popupInfo("Ошибка чтения настроек (сброшены)");
             saveSettings();
             }
     }
@@ -608,7 +621,10 @@ public class MainActivity extends AppCompatActivity {
             "Прервать",
             "Образец",
             "Уровень заряда",
-            "Конвертировать в wave"
+            "Конвертировать в wave",
+            "Добавить имя сенсора",
+            "Список сенсоров",
+            "Очистить список",
             };
     public void procMenuItem(int index) {
         switch (index){
@@ -649,7 +665,7 @@ case 9: selectSensor(new SensorListener() {
 case 10:selectSensor(new SensorListener() {
             @Override
             public void onSensor(BTReceiver receiver) {
-                String name = receiver.getSensorName().replace("_","-");
+                String name = getSensorName(receiver).replace("_","-");
                 LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
                 receiver.startMeasure(file,false);
                 }
@@ -659,7 +675,7 @@ case 11:selectSensorGroup(new SensorGroupListener() {
             @Override
             public void onSensor(ArrayList<BTReceiver> receiverList) {
                 for(BTReceiver receiver :  receiverList){
-                    String name = receiver.getSensorName().replace("_","-");
+                    String name = getSensorName(receiver).replace("_","-");
                     LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
                     receiver.startMeasure(file,false);
                     }
@@ -685,6 +701,15 @@ case 14:selectSensor(new SensorListener() {
             });
         break;
 case 15:convertDialog();
+        break;
+case 16:addSensorName();
+        break;
+case 17:for(BTDescriptor descriptor : set.knownSensors)
+            addToLog("Датчик: "+descriptor.btName+": "+descriptor.btMAC);
+        break;
+case 18:set.knownSensors.clear();
+        set.createMaps();
+        saveSettings();
         break;
         }
     }
@@ -866,9 +891,18 @@ case 15:convertDialog();
     public final static int BT_LightGreen=5;
     private final static int BTStateID[]={R.drawable.status_gray,R.drawable.status_red,R.drawable.status_yellow,
             R.drawable.status_green,R.drawable.status_light_red,R.drawable.status_light_green};
+    public String getSensorName(BTReceiver receiver){
+        BTDescriptor descriptor = set.addressMap.get(receiver.getSensorMAC());
+        return descriptor==null ? receiver.getSensorName() : descriptor.btName;
+        }
     private void setBTScanerState(int state){
         BTScanerState.setImageResource(BTStateID[state]);
         }
+    private void setBTPopup(BTReceiver receiver,String text){
+        int idx = sensorList.indexOf(receiver);
+        if (idx!=-1 && idx < SensorMaxNumber)
+            popupInfo(getSensorName(receiver)+":"+text);
+            }
     private void setBTState(BTReceiver receiver,int state){
         int idx = sensorList.indexOf(receiver);
         if (idx!=-1 && idx < SensorMaxNumber)
@@ -878,7 +912,7 @@ case 15:convertDialog();
         int idx = sensorList.indexOf(receiver);
         if (idx!=-1 && idx < SensorMaxNumber)
             BTStateText[idx].setText(text);
-    }
+        }
     private void setBTState(ImageView view,int state){
         view.setImageResource(BTStateID[state]);
         }
@@ -944,10 +978,12 @@ case 15:convertDialog();
                     .build();
             scanner.startScan(filters, scanSettings, scanCallback);
             addToLog("Сканирование началось");
+            popupInfo("Сканирование началось");
             scannerHandler.postDelayed(scanerTimeOut,BT_SCANNING_TIME_IN_SEC*1000);
             }
         else{
             addToLog("Сканер BleuTooth не получен");
+            popupInfo("Сканер BleuTooth не получен");
             setBTScanerState(BT_Red);
             return;
             }
@@ -955,11 +991,12 @@ case 15:convertDialog();
     private void selectSensor(final SensorListener listener){
         if (sensorList.size()==0){
             addToLog("Нет включенных датчиков");
+            popupInfo("Нет включенных датчиков");
             return;
             }
         ArrayList<String> sensorNames = new ArrayList<>();
         for(BTReceiver receiver : sensorList)
-            sensorNames.add(receiver.getSensorName());
+            sensorNames.add(getSensorName(receiver));
         new ListBoxDialog(this, sensorNames, "Датчик", new ListBoxListener() {
             @Override
             public void onSelect(int index) {
@@ -977,7 +1014,7 @@ case 15:convertDialog();
             }
         ArrayList<String> sensorNames = new ArrayList<>();
         for(BTReceiver receiver : sensorList)
-            sensorNames.add(receiver.getSensorName());
+            sensorNames.add(getSensorName(receiver));
         new MultiListBoxDialog(this,  "Датчики (старт)", sensorNames, new MultyListBoxListener() {
             @Override
             public void onSelect(boolean[] selected) {
@@ -987,7 +1024,33 @@ case 15:convertDialog();
                         out.add(sensorList.get(i));
                 listener.onSensor(out);
                 }
+            });
+        }
+    private void addSensorName(){
+        if (sensorList.size()!=1){
+            addToLog("Требуется только один активный датчик");
+            popupInfo("Нужен один активный датчик");
+            return;
             }
-        );
+        final BTReceiver receiver = sensorList.get(0);
+        if (set.addressMap.get(receiver.getSensorMAC())!=null){
+            addToLog("Датчик с именем: "+getSensorName(receiver));
+            popupInfo("Датчик с именем: "+getSensorName(receiver));
+            return;
+            }
+        new SensorNameDialog(this, receiver.getSensorMAC(), new EventListener() {
+            @Override
+            public void onEvent(String ss) {
+                if (set.nameMap.get(ss)!=null){
+                    addToLog("Имя используется: "+ss);
+                    popupInfo("Имя используется: "+ss);
+                    return;
+                    }
+                set.knownSensors.add(new BTDescriptor(ss,receiver.getSensorMAC()));
+                set.createMaps();
+                saveSettings();
+                }
+            });
     }
+
 }
