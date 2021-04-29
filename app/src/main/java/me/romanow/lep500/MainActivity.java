@@ -604,6 +604,7 @@ public class MainActivity extends AppCompatActivity {
             "Сканер-стоп",
             "Выключить датчик",
             "Измерение",
+            "Измерение-группа",
             "Прервать",
             "Образец",
             "Уровень заряда",
@@ -639,7 +640,7 @@ case 8:
         break;
 case 9: selectSensor(new SensorListener() {
             @Override
-            public void omSensor(BTReceiver receiver) {
+            public void onSensor(BTReceiver receiver) {
                 receiver.deviceOff();
                 receiver.blueToothOff();
                 }
@@ -647,32 +648,43 @@ case 9: selectSensor(new SensorListener() {
         break;
 case 10:selectSensor(new SensorListener() {
             @Override
-            public void omSensor(BTReceiver receiver) {
+            public void onSensor(BTReceiver receiver) {
                 String name = receiver.getSensorName().replace("_","-");
                 LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
                 receiver.startMeasure(file,false);
                 }
             });
         break;
-case 11:selectSensor(new SensorListener() {
+case 11:selectSensorGroup(new SensorGroupListener() {
             @Override
-            public void omSensor(BTReceiver receiver) {
+            public void onSensor(ArrayList<BTReceiver> receiverList) {
+                for(BTReceiver receiver :  receiverList){
+                    String name = receiver.getSensorName().replace("_","-");
+                    LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
+                    receiver.startMeasure(file,false);
+                    }
+                }
+            });
+        break;
+case 12:selectSensor(new SensorListener() {
+            @Override
+            public void onSensor(BTReceiver receiver) {
                 receiver.stopMeasure();
                 }
             });
         break;
-case 12:LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
+case 13:LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
         BTReceiver receiver = new BTReceiver(this,btBack);
         receiver.startMeasure(file2,true);
         break;
-case 13:selectSensor(new SensorListener() {
+case 14:selectSensor(new SensorListener() {
             @Override
-            public void omSensor(BTReceiver receiver) {
+            public void onSensor(BTReceiver receiver) {
                 receiver.getChargeLevel();
                 }
             });
         break;
-case 14:convertDialog();
+case 15:convertDialog();
         break;
         }
     }
@@ -948,14 +960,34 @@ case 14:convertDialog();
         ArrayList<String> sensorNames = new ArrayList<>();
         for(BTReceiver receiver : sensorList)
             sensorNames.add(receiver.getSensorName());
-            new ListBoxDialog(this, sensorNames, "Датчик", new ListBoxListener() {
-                @Override
-                public void onSelect(int index) {
-                    listener.omSensor(sensorList.get(index));
+        new ListBoxDialog(this, sensorNames, "Датчик", new ListBoxListener() {
+            @Override
+            public void onSelect(int index) {
+                    listener.onSensor(sensorList.get(index));
                     }
-                @Override
-                public void onLongSelect(int index) { }
+            @Override
+            public void onLongSelect(int index) { }
+            }
+        ).create();
+    }
+    private void selectSensorGroup(final SensorGroupListener listener){
+        if (sensorList.size()==0){
+            addToLog("Нет включенных датчиков");
+            return;
+            }
+        ArrayList<String> sensorNames = new ArrayList<>();
+        for(BTReceiver receiver : sensorList)
+            sensorNames.add(receiver.getSensorName());
+        new MultiListBoxDialog(this,  "Датчики (старт)", sensorNames, new MultyListBoxListener() {
+            @Override
+            public void onSelect(boolean[] selected) {
+                ArrayList<BTReceiver> out = new ArrayList<>();
+                for(int i=0;i<selected.length;i++)
+                    if (selected[i])
+                        out.add(sensorList.get(i));
+                listener.onSensor(out);
                 }
-            ).create();
-        }
+            }
+        );
+    }
 }

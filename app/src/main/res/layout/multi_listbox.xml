@@ -8,12 +8,12 @@
     >
 
     <TextView
-		android:id="@+id/dialog_listbox_header"
+		android:id="@+id/multi_listbox_header"
         android:background="@drawable/background_head"
 		android:layout_width="match_parent" 
 		android:layout_height="wrap_content"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
 		android:textSize="20dp"
         android:textColor="@color/Yellow"
         android:text=""
@@ -30,7 +30,7 @@
 
         <LinearLayout
             xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/dialog_listbox_panel"
+            android:id="@+id/multi_listbox_panel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#FF000000"
