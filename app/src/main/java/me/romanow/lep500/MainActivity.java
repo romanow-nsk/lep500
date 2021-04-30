@@ -838,6 +838,7 @@ case 19: showWaveForm();
         int size = currentWave.getData().length;
         int count = size/waveMas;
         int lastPoint = size - firstPoint - count;
+        if (lastPoint<0) lastPoint=0;
         paintOne(graphView,currentWave.getData(),DispColor,firstPoint,lastPoint,false);
         addToLog("");
         }
