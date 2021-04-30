@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
 
-public class SensorNameDialog {
+public class OneParameterDialog {
     private AlertDialog myDlg=null;
     private boolean wasChanged=false;
     private Activity base;
@@ -49,7 +49,7 @@ public class SensorNameDialog {
         return xx;
         }
 
-    public SensorNameDialog(Activity base0, String addressMAC, final  EventListener listener){
+    public OneParameterDialog(Activity base0, String title, String parName, String parValue, final  EventListener listener){
         base = base0;
         try {
             myDlg=new AlertDialog.Builder(base).create();
@@ -63,12 +63,13 @@ public class SensorNameDialog {
                 public void onClick(final View arg0) {
                     myDlg.cancel();
                 }});
+            hd.setText(title);
             myDlg.setOnCancelListener(new DialogInterface.OnCancelListener(){
                 public void onCancel(DialogInterface arg0) {
                     myDlg.cancel();
                     }
                 });
-            LinearLayout layout = createItem("Имя сенсора", addressMAC, true,new EventListener(){
+            LinearLayout layout = createItem(parName, parValue, true,new EventListener(){
                 @Override
                 public void onEvent(String ss) {
                     listener.onEvent(ss);

@@ -80,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean hideFFTOutput=false;
     private DataDesription archive = new DataDesription();
     private double freqStep = 0;
+    private int waveMas=1;
+    private double waveStartTime=0;
     //----------------------------------------------------------------------------
     private LinearLayout log;
     private ScrollView scroll;
@@ -167,6 +169,10 @@ public class MainActivity extends AppCompatActivity {
         addToLog("Звенящие опоры России",25);
         //blueToothOn();            // Для отладки
         }
+    public void popupAndLog(String ss){
+        addToLog(ss);
+        popupInfo(ss);
+        }
     private void blueToothOff(){
         for(BTReceiver receiver : sensorList)
             receiver.blueToothOff();
@@ -232,6 +238,17 @@ public class MainActivity extends AppCompatActivity {
         log.addView(txt);
         scrollDown();
         }
+    private void addToLog(String ss, int textSize, View.OnClickListener listener){
+        Button tt = new Button(this);
+        tt.setText(ss);
+        tt.setPadding(5,5,5,5);
+        tt.setBackgroundResource(R.drawable.button_background);
+        tt.setTextColor(0xFFFFFFFF);
+        tt.setOnClickListener(listener);
+        tt.setTextSize(textSize);
+        log.addView(tt);
+        scrollDown();
+    }
     private void addToLogButton(String ss){
         addToLogButton(ss,null,null);
         }
@@ -280,21 +297,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         return result;
-        }
-
-    public void processInputStreamWave(InputStream is) throws Throwable{
-        FFTAudioTextFile xx = new FFTAudioTextFile();
-        xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
-        LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
-        LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
-        LineGraphView graphView = new LineGraphView(this,"");
-        graphView.setScalable(true);
-        graphView.setScrollable(true);
-        graphView.getGraphViewStyle().setTextSize(15);
-        panel.addView(graphView);
-        log.addView(lrr);
-        paintOne(graphView,xx.getData(),DispColor,0,0,false);
-        addToLog("");
         }
 
     public void processInputStream(InputStream is) throws Throwable{
@@ -353,8 +355,7 @@ public class MainActivity extends AppCompatActivity {
         String path     = "";
         try {
             if(requestCode == REQUEST_ENABLE_BT) {
-                addToLog("BlueTooth включен, повторите команду");
-                popupInfo("BlueTooth включен, повторите команду");
+                popupAndLog("BlueTooth включен, повторите команду");
                 }
             if(requestCode == CHOOSE_RESULT) {
                 InputStream is = openSelected(data).o1;
@@ -455,8 +456,7 @@ public class MainActivity extends AppCompatActivity {
         public void onFinish() {
             calcFirstLastPoints();
             if (inputStat.getCount()==0){
-                addToLog("Настройки: короткий период измерений/много блоков");
-                popupInfo("Настройки: короткий период измерений/много блоков");
+                popupAndLog("Настройки: короткий период измерений/много блоков");
                 return;
                 }
             inputStat.smooth(set.kSmooth);
@@ -522,8 +522,8 @@ public class MainActivity extends AppCompatActivity {
     public void paintOne(LineGraphView graphView,float data[], int color,int noFirst,int noLast,boolean freqMode){
         GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length-noFirst-noLast];
         for(int j=noFirst;j<data.length-noLast;j++){                    // Подпись значений факторов j-ой ячейки
-            double freq = j*50./data.length;
-            zz[j-noFirst] = new GraphView.GraphViewData(freqMode ? freq : j,data[j]);
+            double freq = freqMode ? (j*50./data.length) : (j/100.);
+            zz[j-noFirst] = new GraphView.GraphViewData(freq,data[j]);
             }
         GraphViewSeries series = new GraphViewSeries(zz);
         series.getStyle().color = color | 0xFF000000;
@@ -613,8 +613,7 @@ public class MainActivity extends AppCompatActivity {
             out.close();
             set.createMaps();
         } catch (Exception ee) {
-            addToLog("Ошибка чтения настроек (сброшены)");
-            popupInfo("Ошибка чтения настроек (сброшены)");
+            popupAndLog("Ошибка чтения настроек (сброшены)");
             saveSettings();
             }
     }
@@ -725,7 +724,7 @@ case 18:set.knownSensors.clear();
         set.createMaps();
         saveSettings();
         break;
-case 19: showWavwForm();
+case 19: showWaveForm();
         break;
         }
     }
@@ -778,16 +777,82 @@ case 19: showWavwForm();
                 addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
                 }
         }
+    //----------------------------------------------------------------------------------------------
+    View.OnClickListener waveStartEvent = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Начало (сек)", "" + waveStartTime, new EventListener() {
+                @Override
+                public void onEvent(String ss) {
+                    try {
+                        double val = Double.parseDouble(ss);
+                        if (val<0 || val>currentWave.getData().length/100.){
+                            popupAndLog("Выход за пределы диапазона");
+                            return;
+                            }
+                        waveStartTime = val;
+                        procWaveForm();
+                        } catch (Exception ee){
+                            popupAndLog("Формат вещественного числа");
+                            }
+                        }
+                    });
+                }
+            };
+    //----------------------------------------------------------------------------------------------
+    View.OnClickListener waveMasEvent = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Масштаб", "" + waveMas, new EventListener() {
+                @Override
+                public void onEvent(String ss) {
+                    try {
+                        int val = Integer.parseInt(ss);
+                        waveMas = val;
+                        procWaveForm();
+                    } catch (Exception ee){
+                        popupAndLog("Формат целого числа");
+                        }
+                }
+            });
+        }
+    };
+    //----------------------------------------------------------------------------------------------
+    private FFTAudioTextFile currentWave;
+    public  void procWaveForm(final FFTAudioTextFile xx){
+        currentWave = xx;
+        procWaveForm();
+        }
+    public  void procWaveForm(){
+        LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
+        LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
+        LineGraphView graphView = new LineGraphView(this,"");
+        graphView.setScalable(true);
+        graphView.setScrollable(true);
+        graphView.getGraphViewStyle().setTextSize(15);
+        panel.addView(graphView);
+        addToLog("Начало (сек)",20,waveStartEvent);
+        addToLog("Масштаб",20,waveMasEvent);
+        log.addView(lrr);
+        int firstPoint = (int)(waveStartTime*100);
+        int size = currentWave.getData().length;
+        int count = size/waveMas;
+        int lastPoint = size - firstPoint - count;
+        paintOne(graphView,currentWave.getData(),DispColor,firstPoint,lastPoint,false);
+        addToLog("");
+        }
 
-    public  void procWaveForm(int index,boolean longClick){
+    public  void procWaveForm(int index){
         FileDescription fd = archive.fileList.get(index);
         String fname = fd.originalFileName;
         try {
-            fullInfo=longClick;
-            hideFFTOutput=!longClick;
             FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
             addToLog(fd.toString(),greatTextSize);
-            processInputStreamWave(fis);
+            FFTAudioTextFile xx = new FFTAudioTextFile();
+            xx.readData(new BufferedReader(new InputStreamReader(fis, "Windows-1251")));
+            waveMas=1;
+            waveStartTime=0;
+            procWaveForm(xx);
             } catch (Throwable e) {
                 addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
                 }
@@ -810,7 +875,7 @@ case 19: showWavwForm();
             }).create();
         }
 
-    public void showWavwForm(){
+    public void showWaveForm(){
         createArchive();
         ArrayList<String> out = new ArrayList<>();
         for(FileDescription ff : archive.fileList)
@@ -818,7 +883,7 @@ case 19: showWavwForm();
         new ListBoxDialog(this, out, "Просмотр волны", new ListBoxListener() {
             @Override
             public void onSelect(int index) {
-                procWaveForm(index,false);
+                procWaveForm(index);
                 }
             @Override
             public void onLongSelect(int index) {}
@@ -1033,8 +1098,7 @@ case 19: showWavwForm();
         }
     private void selectSensor(final SensorListener listener){
         if (sensorList.size()==0){
-            addToLog("Нет включенных датчиков");
-            popupInfo("Нет включенных датчиков");
+            popupAndLog("Нет включенных датчиков");
             return;
             }
         ArrayList<String> sensorNames = new ArrayList<>();
@@ -1052,7 +1116,7 @@ case 19: showWavwForm();
     }
     private void selectSensorGroup(final SensorGroupListener listener){
         if (sensorList.size()==0){
-            addToLog("Нет включенных датчиков");
+          popupAndLog("Нет включенных датчиков");
             return;
             }
         ArrayList<String> sensorNames = new ArrayList<>();
@@ -1071,22 +1135,19 @@ case 19: showWavwForm();
         }
     private void addSensorName(){
         if (sensorList.size()!=1){
-            addToLog("Требуется только один активный датчик");
-            popupInfo("Нужен один активный датчик");
+            popupAndLog("Нужен один активный датчик");
             return;
             }
         final BTReceiver receiver = sensorList.get(0);
         if (set.addressMap.get(receiver.getSensorMAC())!=null){
-            addToLog("Датчик с именем: "+getSensorName(receiver));
-            popupInfo("Датчик с именем: "+getSensorName(receiver));
+            popupAndLog("Датчик с именем: "+getSensorName(receiver));
             return;
             }
-        new SensorNameDialog(this, receiver.getSensorMAC(), new EventListener() {
+        new OneParameterDialog(this, "Имя датчика",receiver.getSensorMAC(),"", new EventListener() {
             @Override
             public void onEvent(String ss) {
                 if (set.nameMap.get(ss)!=null){
-                    addToLog("Имя используется: "+ss);
-                    popupInfo("Имя используется: "+ss);
+                    popupAndLog("Имя используется: "+ss);
                     return;
                     }
                 set.knownSensors.add(new BTDescriptor(ss,receiver.getSensorMAC()));
