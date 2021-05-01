@@ -55,6 +55,7 @@ import romanow.snn_simulator.layer.Extreme;
 import romanow.snn_simulator.layer.LayerStatistic;
 
 public class MainActivity extends AppCompatActivity {
+    private BTViewFace btViewFace = new BTViewFace(this);
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
     LEP500Settings set = new LEP500Settings();
@@ -72,11 +73,10 @@ public class MainActivity extends AppCompatActivity {
     private final int GraphBackColor = 0x00A0C0C0;
     final static String archiveFile="LEP500Archive.json";
     //------------------------------------------------------------------------------------
-    public final int SensorMaxNumber=4;
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
     private int noLastPoints=1000;
-    private boolean fullInfo=false;
+    private boolean fullInfo=false;         // Вывод полной инофрмации о спектре
     private boolean hideFFTOutput=false;
     private DataDesription archive = new DataDesription();
     private double freqStep = 0;
@@ -87,18 +87,13 @@ public class MainActivity extends AppCompatActivity {
     private ScrollView scroll;
     private final int CHOOSE_RESULT=100;
     private final int CHOOSE_RESULT_COPY=101;
-    private final int REQUEST_ENABLE_BT=102;
-    private final String BT_OWN_NAME="LEP500";
-    private final String BT_SENSOR_NAME_PREFIX="VIBR_SENS";
-    private final int BT_DISCOVERY_TIME_IN_SEC=300;
-    private final int BT_SCANNING_TIME_IN_SEC=30;
-    private BluetoothLeScanner scanner = null;
-    private ImageView BTState[]=new ImageView[4];
-    private TextView BTStateText[]=new TextView[4];
-    private ImageView BTScanerState;
+    public final int REQUEST_ENABLE_BT=102;
+    public final String BT_OWN_NAME="LEP500";
+    public final String BT_SENSOR_NAME_PREFIX="VIBR_SENS";
+    public final int BT_DISCOVERY_TIME_IN_SEC=300;
+    public final int BT_SCANNING_TIME_IN_SEC=30;
     private ImageView MenuButton;
     private ImageView GPSState;
-    private ArrayList<BTReceiver> sensorList = new ArrayList<>();
     //--------------------------------------------------------------------------
     private GPSService gpsService = new GPSService(new GPSListener() {
         @Override
@@ -122,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
             addToLog(ss);
             }
         };
+
     //------------------------------------------------------------------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,18 +125,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             setContentView(R.layout.activity_main);
-            //Toolbar toolbar = findViewById(R.id.toolbar);
-            //setSupportActionBar(toolbar);
+            btViewFace.init();
             MenuButton = (ImageView) findViewById(R.id.headerMenu);
-            BTState[0] = (ImageView) findViewById(R.id.headerState0);
-            BTState[1] = (ImageView) findViewById(R.id.headerState1);
-            BTState[2] = (ImageView) findViewById(R.id.headerState2);
-            BTState[3] = (ImageView) findViewById(R.id.headerState3);
-            BTScanerState  = (ImageView) findViewById(R.id.headerScanerState);
-            BTStateText[0] = (TextView) findViewById(R.id.headerStateText0);
-            BTStateText[1] = (TextView) findViewById(R.id.headerStateText1);
-            BTStateText[2] = (TextView) findViewById(R.id.headerStateText2);
-            BTStateText[3] = (TextView) findViewById(R.id.headerStateText3);
             GPSState = (ImageView) findViewById(R.id.headerGPS);
             log = (LinearLayout) findViewById(R.id.log);
             scroll = (ScrollView)findViewById(R.id.scroll);
@@ -166,52 +152,21 @@ public class MainActivity extends AppCompatActivity {
                 }).create();
             }
         });
+        btViewFace.init();
         addToLog("Звенящие опоры России",25);
-        //blueToothOn();            // Для отладки
         }
+
     public void popupAndLog(String ss){
         addToLog(ss);
         popupInfo(ss);
-        }
-    private void blueToothOff(){
-        for(BTReceiver receiver : sensorList)
-            receiver.blueToothOff();
-        sensorList.clear();
-        setBTScanerState(BT_Gray);
         }
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(blueToothReceiver);
-        blueToothOff();
+        btViewFace.blueToothOff();
         gpsService.stopService();
         }
-    private BTListener btBack = new BTListener() {
-        @Override
-        public void notify(BTReceiver sensor, String ss) {
-            addToLog(ss);
-            }
-        @Override
-        public void onReceive(BTReceiver sensor, LEP500File file){
-            file.save(androidFileDirectory(), logEvent);
-            addToLog("Записано: "+file.createOriginalFileName()+" ["+file.getData().length+"]");
-            set.measureCounter++;           // Номер следующего измерения
-            saveSettings();
-            }
-        @Override
-        public void onState(BTReceiver sensor, int state) {
-            setBTState(sensor,state);
-            }
-
-        @Override
-        public void onStateText(BTReceiver sensor, String text) {
-            setBTStateText(sensor,text);
-            }
-        @Override
-        public void onPopup(BTReceiver sensor, String text) {
-            setBTPopup(sensor,text);
-            }
-    };
     public void scrollDown(){
         scroll.post(new Runnable() {
             @Override
@@ -220,6 +175,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+    public void saveBTFile(BTReceiver sensor, LEP500File file){
+        file.save(androidFileDirectory(), logEvent);
+        addToLog(btViewFace.getSensorName(sensor)+" записано: "+file.createOriginalFileName()+" ["+file.getData().length+"]");
+        set.measureCounter++;           // Номер следующего измерения
+        saveSettings();
+    }
 
     private void calcFirstLastPoints(){
         int width=fft.getParams().W();
@@ -227,10 +188,18 @@ public class MainActivity extends AppCompatActivity {
         noFirstPoints = (int)(set.FirstFreq/df);
         noLastPoints = (int)((50-set.LastFreq)/df);
         }
-    private void addToLog(String ss){
-        addToLog(ss,0);
+    public void addToLog(String ss){
+        addToLog(false, ss,0);
         }
-    private void addToLog(String ss, int textSize){
+    public void addToLog(boolean fullInfoMes, String ss){
+        addToLog(fullInfoMes, ss,0);
+        }
+    public void addToLog(String ss, int textSize){
+        addToLog(false,ss,textSize);
+        }
+    public void addToLog(boolean fullInfoMes, String ss, int textSize){
+        if (fullInfoMes && !set.fullInfo)
+            return;
         TextView txt = new TextView(this);
         txt.setText(ss);
         if (textSize!=0)
@@ -238,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
         log.addView(txt);
         scrollDown();
         }
-    private void addToLog(String ss, int textSize, View.OnClickListener listener){
+    public void addToLog(String ss, int textSize, View.OnClickListener listener){
         Button tt = new Button(this);
         tt.setText(ss);
         tt.setPadding(5,5,5,5);
@@ -248,14 +217,14 @@ public class MainActivity extends AppCompatActivity {
         tt.setTextSize(textSize);
         log.addView(tt);
         scrollDown();
-    }
-    private void addToLogButton(String ss){
+        }
+    public void addToLogButton(String ss){
         addToLogButton(ss,null,null);
         }
-    private void addToLogButton(String ss, View.OnClickListener listener){
+    public void addToLogButton(String ss, View.OnClickListener listener){
         addToLogButton(ss,listener,null);
         }
-    private void addToLogButton(String ss, View.OnClickListener listener, View.OnLongClickListener listenerLong){
+    public void addToLogButton(String ss, View.OnClickListener listener, View.OnLongClickListener listenerLong){
         LinearLayout button = (LinearLayout)getLayoutInflater().inflate(R.layout.button,null);
         Button bb = (Button)button.findViewById(R.id.button_press);
         bb.setText(ss);
@@ -660,14 +629,11 @@ case 5: log.removeAllViews();
         break;
 case 6: new SettingsMenu(this);
         break;
-case 7: blueToothOn();
+case 7: btViewFace.blueToothOn();
         break;
-case 8:
-        if (scanner!=null)
-            scanner.stopScan(scanCallback);
-        setBTScanerState(BT_Gray);
+case 8: btViewFace.startScanner();
         break;
-case 9: selectSensor(new SensorListener() {
+case 9: btViewFace.selectSensor(new SensorListener() {
             @Override
             public void onSensor(BTReceiver receiver) {
                 receiver.deviceOff();
@@ -675,27 +641,27 @@ case 9: selectSensor(new SensorListener() {
                 }
             });
         break;
-case 10:selectSensor(new SensorListener() {
+case 10:btViewFace.selectSensor(new SensorListener() {
             @Override
             public void onSensor(BTReceiver receiver) {
-                String name = getSensorName(receiver).replace("_","-");
+                String name = btViewFace.getSensorName(receiver).replace("_","-");
                 LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
                 receiver.startMeasure(file,false);
                 }
             });
         break;
-case 11:selectSensorGroup(new SensorGroupListener() {
+case 11:btViewFace.selectSensorGroup(new SensorGroupListener() {
             @Override
             public void onSensor(ArrayList<BTReceiver> receiverList) {
                 for(BTReceiver receiver :  receiverList){
-                    String name = getSensorName(receiver).replace("_","-");
+                    String name = btViewFace.getSensorName(receiver).replace("_","-");
                     LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
                     receiver.startMeasure(file,false);
                     }
                 }
             });
         break;
-case 12:selectSensor(new SensorListener() {
+case 12:btViewFace.selectSensor(new SensorListener() {
             @Override
             public void onSensor(BTReceiver receiver) {
                 receiver.stopMeasure();
@@ -703,10 +669,10 @@ case 12:selectSensor(new SensorListener() {
             });
         break;
 case 13:LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
-        BTReceiver receiver = new BTReceiver(this,btBack);
+        BTReceiver receiver = new BTReceiver(this,btViewFace.BTBack);
         receiver.startMeasure(file2,true);
         break;
-case 14:selectSensor(new SensorListener() {
+case 14:btViewFace.selectSensor(new SensorListener() {
             @Override
             public void onSensor(BTReceiver receiver) {
                 receiver.getChargeLevel();
@@ -781,7 +747,7 @@ case 19: showWaveForm();
     View.OnClickListener waveStartEvent = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            new OneParameterDialog(MainActivity.this, "Параметр графика", "Начало (сек)", "" + waveStartTime, new EventListener() {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Начало (сек)", "" + waveStartTime, false, new EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     try {
@@ -803,7 +769,7 @@ case 19: showWaveForm();
     View.OnClickListener waveMasEvent = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            new OneParameterDialog(MainActivity.this, "Параметр графика", "Масштаб", "" + waveMas, new EventListener() {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Масштаб", "" + waveMas, false, new EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     try {
@@ -951,200 +917,24 @@ case 19: showWaveForm();
                 BluetoothDevice device= intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
                 if (device.getName().startsWith(BT_SENSOR_NAME_PREFIX)){
-                    BTReceiver receiver = new BTReceiver(MainActivity.this,btBack);
+                    BTReceiver receiver = new BTReceiver(MainActivity.this,btViewFace.BTBack);
                     receiver.blueToothOn(device);
-                    sensorList.add(receiver);
+                    btViewFace.sensorList.add(receiver);
                     }
                 }
             }
-    };
-    //----------------------------------------------------------------------------------------------
-    private final ScanCallback scanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            BluetoothDevice device = result.getDevice();
-            if (device.getName()==null)
-                return;
-            addToLog("BlueTooth: "+device.getName()+" "+device.getAddress());
-            if (device.getName().startsWith(BT_SENSOR_NAME_PREFIX)){
-                addToLog("BlueTooth: "+device.getName()+" подключение");
-                scanner.stopScan(scanCallback);
-                scannerHandler.removeCallbacks(scanerTimeOut);
-                BTReceiver receiver = new BTReceiver(MainActivity.this,btBack);
-                receiver.blueToothOn(device);
-                sensorList.add(receiver);
-                }
-            }
-        @Override
-        public void onBatchScanResults(List<ScanResult> results) {}
-        @Override
-        public void onScanFailed(int errorCode) {}
         };
-    //----------------------------------------------------------------------------------------------
-    Handler scannerHandler = new Handler();
-    Runnable scanerTimeOut = new Runnable() {
-        @Override
-        public void run() {
-            addToLog("Тайм-аут сканирования");
-            if (scanner!=null)
-                scanner.stopScan(scanCallback);
-            setBTScanerState(BT_Gray);
-        }
-    };
-    //----------------------------------------------------------------------------------------------
-    public final static int BT_Gray=0;
-    public final static int BT_Red=1;
-    public final static int BT_Yellow=2;
-    public final static int BT_Green=3;
-    public final static int BT_LightRed=4;
-    public final static int BT_LightGreen=5;
-    private final static int BTStateID[]={R.drawable.status_gray,R.drawable.status_red,R.drawable.status_yellow,
-            R.drawable.status_green,R.drawable.status_light_red,R.drawable.status_light_green};
-    public String getSensorName(BTReceiver receiver){
-        BTDescriptor descriptor = set.addressMap.get(receiver.getSensorMAC());
-        return descriptor==null ? receiver.getSensorName() : descriptor.btName;
-        }
-    private void setBTScanerState(int state){
-        BTScanerState.setImageResource(BTStateID[state]);
-        }
-    private void setBTPopup(BTReceiver receiver,String text){
-        int idx = sensorList.indexOf(receiver);
-        if (idx!=-1 && idx < SensorMaxNumber)
-            popupInfo(getSensorName(receiver)+":"+text);
-            }
-    private void setBTState(BTReceiver receiver,int state){
-        int idx = sensorList.indexOf(receiver);
-        if (idx!=-1 && idx < SensorMaxNumber)
-            BTState[idx].setImageResource(BTStateID[state]);
-        }
-    private void setBTStateText(BTReceiver receiver,String text){
-        int idx = sensorList.indexOf(receiver);
-        if (idx!=-1 && idx < SensorMaxNumber)
-            BTStateText[idx].setText(text);
-        }
-    private void setBTState(ImageView view,int state){
-        view.setImageResource(BTStateID[state]);
-        }
-    public void blueToothOn(){
-        blueToothOff();
-        BluetoothAdapter bluetooth= BluetoothAdapter.getDefaultAdapter();
-        if(bluetooth==null) {
-            addToLog("Нет модуля BlueTooth");
-            setBTScanerState(BT_Red);
-            return;
-            }
-        if (!bluetooth.isEnabled()) {
-            // Bluetooth выключен. Предложим пользователю включить его.
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            return;
-            }
-        bluetooth.setName(BT_OWN_NAME);
-        int btState= bluetooth.getState();
-        if (btState==BluetoothAdapter.STATE_ON){
-            addToLog("Состояние BlueTooth: включен");
-            setBTScanerState(BT_Green);
-            }
-        if (btState==BluetoothAdapter.STATE_TURNING_ON){
-            addToLog("Состояние BlueTooth: включается");
-            setBTScanerState(BT_Yellow);
-            }
-        if (btState==BluetoothAdapter.STATE_OFF){
-            addToLog("Состояние BlueTooth: выключен");
-            setBTScanerState(BT_Red);
-            }
-        if (btState==BluetoothAdapter.STATE_TURNING_OFF){
-            addToLog("Состояние BlueTooth: выключается");
-            setBTScanerState(BT_Yellow);
-            }
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        scanner = adapter.getBluetoothLeScanner();
-        if (scanner != null) {
-            sensorList.clear();
-            List<ScanFilter> filters = new ArrayList<>();
-            int filterMode=0;
-            // ----------------- Сканирование по UUID
-            if (filterMode==1){
-                UUID BLP_SERVICE_UUID = UUID.fromString(BTReceiver.UUID_SERVICE_STR);
-                ScanFilter filter = new ScanFilter.Builder()
-                    .setServiceUuid(new ParcelUuid(BLP_SERVICE_UUID)).build();
-                filters.add(filter);
-                }
-            // --------------- Сканирование по имени
-            if (filterMode==2) {
-                String[] names = new String[]{BT_SENSOR_NAME_PREFIX};
-                for (String name : names) {
-                    ScanFilter filter = new ScanFilter.Builder().setDeviceName(name).build();
-                    filters.add(filter);
-                    }
-                }
-            ScanSettings scanSettings = new ScanSettings.Builder()
-                    .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-                    .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-                    .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
-                    .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
-                    .setReportDelay(0L)
-                    .build();
-            scanner.startScan(filters, scanSettings, scanCallback);
-            addToLog("Сканирование началось");
-            popupInfo("Сканирование началось");
-            scannerHandler.postDelayed(scanerTimeOut,BT_SCANNING_TIME_IN_SEC*1000);
-            }
-        else{
-            addToLog("Сканер BleuTooth не получен");
-            popupInfo("Сканер BleuTooth не получен");
-            setBTScanerState(BT_Red);
-            return;
-            }
-        }
-    private void selectSensor(final SensorListener listener){
-        if (sensorList.size()==0){
-            popupAndLog("Нет включенных датчиков");
-            return;
-            }
-        ArrayList<String> sensorNames = new ArrayList<>();
-        for(BTReceiver receiver : sensorList)
-            sensorNames.add(getSensorName(receiver));
-        new ListBoxDialog(this, sensorNames, "Датчик", new ListBoxListener() {
-            @Override
-            public void onSelect(int index) {
-                    listener.onSensor(sensorList.get(index));
-                    }
-            @Override
-            public void onLongSelect(int index) { }
-            }
-        ).create();
-    }
-    private void selectSensorGroup(final SensorGroupListener listener){
-        if (sensorList.size()==0){
-          popupAndLog("Нет включенных датчиков");
-            return;
-            }
-        ArrayList<String> sensorNames = new ArrayList<>();
-        for(BTReceiver receiver : sensorList)
-            sensorNames.add(getSensorName(receiver));
-        new MultiListBoxDialog(this,  "Датчики (старт)", sensorNames, new MultyListBoxListener() {
-            @Override
-            public void onSelect(boolean[] selected) {
-                ArrayList<BTReceiver> out = new ArrayList<>();
-                for(int i=0;i<selected.length;i++)
-                    if (selected[i])
-                        out.add(sensorList.get(i));
-                listener.onSensor(out);
-                }
-            });
-        }
     private void addSensorName(){
-        if (sensorList.size()!=1){
+        if (btViewFace.sensorList.size()!=1){
             popupAndLog("Нужен один активный датчик");
             return;
             }
-        final BTReceiver receiver = sensorList.get(0);
+        final BTReceiver receiver = btViewFace.sensorList.get(0);
         if (set.addressMap.get(receiver.getSensorMAC())!=null){
-            popupAndLog("Датчик с именем: "+getSensorName(receiver));
+            popupAndLog("Датчик с именем: "+btViewFace.getSensorName(receiver));
             return;
             }
-        new OneParameterDialog(this, "Имя датчика",receiver.getSensorMAC(),"", new EventListener() {
+        new OneParameterDialog(this, "Имя датчика",receiver.getSensorMAC(),"", false, new EventListener() {
             @Override
             public void onEvent(String ss) {
                 if (set.nameMap.get(ss)!=null){

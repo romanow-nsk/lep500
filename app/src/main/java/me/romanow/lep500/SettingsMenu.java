@@ -212,6 +212,16 @@ public class SettingsMenu {
                             base.popupInfo("Формат числа");}
                         }
                 });
+            layout = createItem("Данные отладки", base.set.fullInfo ? "1" : "0" , new EventListener(){
+                @Override
+                public void onEvent(String ss) {
+                    try {
+                        base.set.fullInfo=Integer.parseInt(ss)!=0;
+                        settingsChanged();
+                    } catch (Exception ee){
+                        base.popupInfo("Формат числа");}
+                    }
+            });
             trmain.addView(layout);
             myDlg.setView(lrr);
             myDlg.show();

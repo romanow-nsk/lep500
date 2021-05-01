@@ -49,7 +49,7 @@ public class OneParameterDialog {
         return xx;
         }
 
-    public OneParameterDialog(Activity base0, String title, String parName, String parValue, final  EventListener listener){
+    public OneParameterDialog(Activity base0, String title, String parName, String parValue, boolean shortSize, final  EventListener listener){
         base = base0;
         try {
             myDlg=new AlertDialog.Builder(base).create();
@@ -69,7 +69,7 @@ public class OneParameterDialog {
                     myDlg.cancel();
                     }
                 });
-            LinearLayout layout = createItem(parName, parValue, true,new EventListener(){
+            LinearLayout layout = createItem(parName, parValue, shortSize,new EventListener(){
                 @Override
                 public void onEvent(String ss) {
                     listener.onEvent(ss);

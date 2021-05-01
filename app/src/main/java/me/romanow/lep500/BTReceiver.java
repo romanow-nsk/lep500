@@ -67,11 +67,11 @@ public class BTReceiver{
         }
     private void startNotify(){
         if (gatt==null){
-            notify("Сервис не подключен");
+            notify(false,"cервис не подключен");
             return;
             }
         if (rwService==null){
-            notify("Сервис не найден");
+            notify(false,"сервис не найден");
             return;
             }
         byte bb[] = new byte[20];
@@ -82,26 +82,26 @@ public class BTReceiver{
             descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
             gatt.writeDescriptor(descriptor);
             }
-        notify("Старт уведомлений");
+        notify(true,"cтарт уведомлений");
         }
     private void receiveAnswer(){
         if (gatt==null){
-            notify("Сервис не подключен");
+            notify(false,"сервис не подключен");
             return;
             }
         if (rwService==null){
-            notify("Сервис не найден");
+            notify(false,"сервис не найден");
             return;
             }
         byte bb[] = new byte[20];
         BluetoothGattCharacteristic received = rwService.getCharacteristic(UUID.fromString(UUID_READ_STR));
         received.setValue(bb);
         gatt.readCharacteristic(received);
-        notify("Старт приема");
+        notify(false,"старт приема");
         }
     public void sendCommand(int cmd, int param){
         if (gatt==null){
-            notify("Сервис не подключен");
+            notify(false,"cервис не подключен");
             return;
             }
         byte bb[] = new byte[4];
@@ -113,8 +113,8 @@ public class BTReceiver{
         sended.setValue(bb);
         sended.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
         gatt.writeCharacteristic(sended);
-        notify("Передано "+cmd+" "+param);
-        back.onState(this, MainActivity.BT_Yellow);
+        notify(true,"передано "+cmd+" "+param);
+        back.onState(this, BTViewFace.BT_Yellow);
         }
     public synchronized void startMeasure(LEP500File file0,boolean tested) {
         startMeasure(file0,-1,tested);
@@ -124,7 +124,7 @@ public class BTReceiver{
         }
     public synchronized void startMeasure(LEP500File file0, int duration,boolean tested) {
         if (isWorking()){
-            notify("Измерение уже выполняется");
+            notify(false,"измерение уже выполняется");
             return;
             }
         file = file0;
@@ -157,26 +157,26 @@ public class BTReceiver{
         }
     public void stopMeasure(){
         if (!isWorking()){
-            notify("Измерение не выполняется");
+            notify(true,"измерение отменено");
             return;
             }
         data = null;
         sendCommand(SENSOR_CMD_STOP,0);
         }
-    private void notify(final String mes){
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                back.notify(BTReceiver.this,mes);
-                    }
-            });
+    private void notify(boolean fullInfo, final String mes){
+        //activity.runOnUiThread(new Runnable() {
+        //    @Override
+        //    public void run() {
+                back.notify(BTReceiver.this,fullInfo,mes);
+        //            }
+        //    });
         }
     private String errorCodes[]={"","Недопустимый интервал измерения","Отмена при отсутствии измерений","Неизвестная команда"};
     private String stateCodes[]={"отключено","включается","включено","выключается"};
     private BluetoothGattCallback gattBack = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            BTReceiver.this.notify("Устройство  "+stateCodes[newState]);
+            BTReceiver.this.notify(true,"устройство  "+stateCodes[newState]);
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
                     int bondstate = device.getBondState();
@@ -185,15 +185,15 @@ public class BTReceiver{
                         gatt.discoverServices();
                         }
                     else{
-                        BTReceiver.this.notify("Ошибка подключения status="+status);
+                        BTReceiver.this.notify(false,"ошибка подключения status="+status);
                         btClose();
-                        back.onState(BTReceiver.this,MainActivity.BT_Red);
+                        back.onState(BTReceiver.this,BTViewFace.BT_Red);
                     }
                     break;
                 case BluetoothProfile.STATE_DISCONNECTED:
                     gatt.close();           // Дождаться события от disconnect !!!!!!!!!
                     gatt=null;
-                    back.onState(BTReceiver.this,MainActivity.BT_Gray);
+                    back.onState(BTReceiver.this,BTViewFace.BT_Gray);
                     break;
                 default:
                 }
@@ -201,25 +201,25 @@ public class BTReceiver{
         @Override
         public void onReliableWriteCompleted(BluetoothGatt gatt, int status) {
             super.onReliableWriteCompleted(gatt, status);
-            BTReceiver.this.notify("Вывод завершен");
-            back.onState(BTReceiver.this,MainActivity.BT_Green);
+            BTReceiver.this.notify(true,"вывод завершен");
+            back.onState(BTReceiver.this,BTViewFace.BT_Green);
             }
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             List<BluetoothGattService> services = gatt.getServices();
-            BTReceiver.this.notify("Ищем сервис "+UUID_SERVICE_STR);
+            BTReceiver.this.notify(true,"ищем сервис "+UUID_SERVICE_STR);
             for (BluetoothGattService service : services) {
-                BTReceiver.this.notify("Cервис " + service.getUuid().toString() + " " + service.getType());
+                BTReceiver.this.notify(true,"cервис " + service.getUuid().toString() + " " + service.getType());
                 if (service.getUuid().toString().equals(UUID_SERVICE_STR)) {
                     rwService = service;
-                    BTReceiver.this.notify("Найден сервис " + service.getUuid().toString() + " " + service.getType());
+                    BTReceiver.this.notify(true,"Найден сервис " + service.getUuid().toString() + " " + service.getType());
                     //receiveAnswer();
                     startNotify();
-                    back.onState(BTReceiver.this,MainActivity.BT_Green);
+                    back.onState(BTReceiver.this,BTViewFace.BT_Green);
                     }
                 }
             if (rwService==null)
-                BTReceiver.this.notify("Cервис не найден");
+                BTReceiver.this.notify(false,"Cервис не найден: "+UUID_SERVICE_STR+"\nдатчик "+getSensorMAC());
             }
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
@@ -227,7 +227,7 @@ public class BTReceiver{
             byte bb[] = characteristic.getValue();
             characteristic.setValue(new byte[20]);
             //BTReceiver.this.notify("Принято(2): "+bb.length+" "+characteristic.getStringValue(0)+"\n"+characteristic.getUuid().toString());
-            back.onState(BTReceiver.this,MainActivity.BT_Green);
+            back.onState(BTReceiver.this,BTViewFace.BT_Green);
             procReceived(bb);
             }
         @Override
@@ -235,51 +235,51 @@ public class BTReceiver{
             byte bb[] = characteristic.getValue();
             characteristic.setValue(new byte[20]);
             procReceived(bb);
-            back.onState(BTReceiver.this,MainActivity.BT_Green);
+            back.onState(BTReceiver.this,BTViewFace.BT_Green);
             }
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
-            BTReceiver.this.notify("Передано status="+status);
-            back.onState(BTReceiver.this,MainActivity.BT_Green);
+            BTReceiver.this.notify(true, "Передано status="+status);
+            back.onState(BTReceiver.this,BTViewFace.BT_Green);
             }
         //------------------------------------------------------- прочее -----------------------------------
         @Override
         public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
             super.onPhyUpdate(gatt, txPhy, rxPhy, status);
-            BTReceiver.this.notify("onPhyUpdate "+status);
+            BTReceiver.this.notify(true,"onPhyUpdate "+status);
             }
         @Override
         public void onPhyRead(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
             super.onPhyRead(gatt, txPhy, rxPhy, status);
-            BTReceiver.this.notify("onPhyRead "+status);
+            BTReceiver.this.notify(true,"onPhyRead "+status);
             }
         @Override
         public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             super.onDescriptorRead(gatt, descriptor, status);
-            BTReceiver.this.notify("onDescriptorRead "+status);
+            BTReceiver.this.notify(true,"onDescriptorRead "+status);
             }
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             super.onDescriptorWrite(gatt, descriptor, status);
-            BTReceiver.this.notify("onDescriptorWrite "+status);
+            BTReceiver.this.notify(true,"onDescriptorWrite "+status);
             }
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
             super.onReadRemoteRssi(gatt, rssi, status);
-            BTReceiver.this.notify("onReadRemoteRssi "+status);
+            BTReceiver.this.notify(true,"onReadRemoteRssi "+status);
             }
         @Override
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
             super.onMtuChanged(gatt, mtu, status);
-            BTReceiver.this.notify("onMtuChanged "+status);
+            BTReceiver.this.notify(true,"onMtuChanged "+status);
             }
     };
     private UUID retryUUID(UUID uuid){
         return new UUID(uuid.getMostSignificantBits(),uuid.getLeastSignificantBits());
         }
     private void notifyUUID(UUID uuid){
-        notify("uuid="+uuid.toString()+"\n"+Long.toHexString(uuid.getMostSignificantBits())+" "+Long.toHexString(uuid.getLeastSignificantBits()));
+        notify(true,"uuid="+uuid.toString()+"\n"+Long.toHexString(uuid.getMostSignificantBits())+" "+Long.toHexString(uuid.getLeastSignificantBits()));
         }
     private boolean procReceived(byte dd[]) {
         if (dd==null || dd.length!=20)
@@ -289,30 +289,31 @@ public class BTReceiver{
         //notify("Принято: "+buffer[0]+":"+buffer[1]);
         switch (buffer[0]){
 case SENSOR_ANS_CHARGE_LEVEL:
-            notify("Заряд батареи: "+buffer[1]+" %");
+            notify(false,"заряд батареи: "+buffer[1]+" %");
             return false;
 case SENSOR_ANS_STOP:
             if (buffer[1]==0){
-                 notify("Отмена измерения");
+                 notify(false,"отмена измерения");
                  return false;
                  }
             if (buffer[1]!=data.length){
-                 notify("Несовпадение размера блока");
+                 notify(false,"несовпадение размера блока");
                  return false;
                  }
             file.setData(data);
             data = null;
-            activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            back.onReceive(BTReceiver.this,file);
-                            back.onStateText(BTReceiver.this,"");
-                        }
-                    });
+            //------------ Убрать синхронизацию к GUI ---------------------
+            //activity.runOnUiThread(new Runnable() {
+            //            @Override
+            //            public void run() {
+            back.onReceive(BTReceiver.this,file);
+            back.onStateText(BTReceiver.this,"");
+            //            }
+            //        });
             return false;
 case SENSOR_ANS_ERROR:
-            notify("Ошибка исполнения команды: "+errorCodes[buffer[1]]);
-            back.onState(BTReceiver.this,MainActivity.BT_LightRed);
+            notify(false,"ошибка исполнения команды: "+errorCodes[buffer[1]]);
+            back.onState(BTReceiver.this,BTViewFace.BT_LightRed);
             return false;
 case SENSOR_ANS_DATA:
             for(int i=buffer[1],j=2; j<10; i++,j++)
@@ -327,16 +328,16 @@ case SENSOR_ANS_DATA:
         if (BLEisOn){
             btClose();
             }
-        back.onState(BTReceiver.this,MainActivity.BT_Gray);
+        back.onState(BTReceiver.this,BTViewFace.BT_Gray);
         }
     public void blueToothOn(BluetoothDevice device0){
         device = device0;
         sensorName = device.getName();
         sensorMAC = device.getAddress();
-        notify("Выбран: "+device.getName()+" "+device.getAddress());
+        notify(true,": выбран: "+device.getName()+" "+device.getAddress());
         gatt = device.connectGatt(activity, false, gattBack,TRANSPORT_LE);
         gatt.connect();
-        back.onState(BTReceiver.this,MainActivity.BT_Yellow);
+        back.onState(BTReceiver.this,BTViewFace.BT_Yellow);
         BLEisOn = true;
         }
     public boolean isBlueToothOn(){

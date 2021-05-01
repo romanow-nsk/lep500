@@ -17,6 +17,7 @@ public class LEP500Settings {
     String measureGroup="СМ-300";       // Подпись группы
     String measureTitle="Опора 125";    // Подпись опоры
     int measureCounter=1;               // Счетчик измерения
+    boolean fullInfo=false;
     ArrayList<BTDescriptor> knownSensors=new ArrayList<>();
     //---------------------------------------------------------------------------
     transient HashMap<String,BTDescriptor> nameMap = new HashMap<>();
