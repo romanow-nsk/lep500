@@ -29,5 +29,15 @@ public class LEP500Settings {
             nameMap.put(descriptor.btName,descriptor);
             addressMap.put(descriptor.btMAC,descriptor);
             }
-    }
+        }
+    public void removeByMAC(String macAddress){
+        for(int i=0;i<knownSensors.size();i++){
+            if (knownSensors.get(i).btMAC.equals(macAddress)){
+                knownSensors.remove(i);
+                createMaps();
+                break;
+            }
+
+        }
+        }
 }

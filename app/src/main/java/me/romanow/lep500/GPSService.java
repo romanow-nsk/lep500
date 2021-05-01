@@ -80,8 +80,9 @@ public class GPSService {
         GPSPoint notValid = new GPSPoint();
         if (!lastGPSGeo.gpsValid() && !lastGPSNet.gpsValid())
             return notValid;
-        if (lastGPSNet.gpsValid() && lastGPSNet.elapsedTimeInSec() / 60 <GPSValidDelay)
-            return lastGPSNet;
+        long delay = lastGPSGeo.elapsedTimeInSec()/60;
+        if (lastGPSGeo.gpsValid() && delay  <GPSValidDelay)
+            return lastGPSGeo;
         return lastGPSNet;          //38 - если нет от сети
     }
 

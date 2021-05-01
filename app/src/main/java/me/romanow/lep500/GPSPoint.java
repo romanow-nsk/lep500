@@ -40,7 +40,7 @@ public class GPSPoint {
         state = exact ? GeoGPS : GeoNet;
         gpsTime = timeMs;
         }
-    public long elapsedTimeInSec(){ return new DateTime().getMillis()-gpsTime; }
+    public long elapsedTimeInSec(){ return (new DateTime().getMillis()-gpsTime)/1000; }
     public GPSPoint(String crd,boolean exact){
         setCoord(crd,exact);
         }

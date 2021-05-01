@@ -39,7 +39,7 @@ public class BTReceiver{
     private LEP500File file;
     private BTListener back;
     private BluetoothDevice device;
-    private Activity activity;
+    private BTViewFace activity;
     private short buffer[] = new short[10];
     private short data[]=null;
     private BluetoothGatt gatt=null;
@@ -57,7 +57,7 @@ public class BTReceiver{
             gatt.disconnect();      // Дальше - по событию disconnect
             }
         }
-    public BTReceiver(Activity activity0, BTListener back0) {
+    public BTReceiver(BTViewFace activity0, BTListener back0) {
         back = back0;
         activity = activity0;
         //notify("UUID сенсора");
@@ -139,7 +139,7 @@ public class BTReceiver{
         if (tested) {
             file.createTestMeasure();
             data = null;
-            activity.runOnUiThread(new Runnable() {
+            activity.face.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     back.onReceive(BTReceiver.this, file);
@@ -216,6 +216,7 @@ public class BTReceiver{
                     //receiveAnswer();
                     startNotify();
                     back.onState(BTReceiver.this,BTViewFace.BT_Green);
+                    back.onStateText(BTReceiver.this, activity.getSensorName(BTReceiver.this));
                     }
                 }
             if (rwService==null)
@@ -294,6 +295,7 @@ case SENSOR_ANS_CHARGE_LEVEL:
 case SENSOR_ANS_STOP:
             if (buffer[1]==0){
                  notify(false,"отмена измерения");
+                 back.onStateText(this,activity.getSensorName(this));
                  return false;
                  }
             if (buffer[1]!=data.length){
@@ -302,14 +304,12 @@ case SENSOR_ANS_STOP:
                  }
             file.setData(data);
             data = null;
-            //------------ Убрать синхронизацию к GUI ---------------------
-            //activity.runOnUiThread(new Runnable() {
-            //            @Override
-            //            public void run() {
-            back.onReceive(BTReceiver.this,file);
-            back.onStateText(BTReceiver.this,"");
-            //            }
-            //        });
+            activity.face.guiCall(new Runnable() {
+                @Override
+                public void run() {
+                    back.onReceive(BTReceiver.this,file);
+                    }
+                });
             return false;
 case SENSOR_ANS_ERROR:
             notify(false,"ошибка исполнения команды: "+errorCodes[buffer[1]]);
@@ -335,7 +335,7 @@ case SENSOR_ANS_DATA:
         sensorName = device.getName();
         sensorMAC = device.getAddress();
         notify(true,": выбран: "+device.getName()+" "+device.getAddress());
-        gatt = device.connectGatt(activity, false, gattBack,TRANSPORT_LE);
+        gatt = device.connectGatt(activity.face, false, gattBack,TRANSPORT_LE);
         gatt.connect();
         back.onState(BTReceiver.this,BTViewFace.BT_Yellow);
         BLEisOn = true;

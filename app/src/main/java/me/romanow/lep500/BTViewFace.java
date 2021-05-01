@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class BTViewFace {
-    final private MainActivity face;
+    final public MainActivity face;
     public final int SensorMaxNumber=4;
     private BluetoothLeScanner scanner = null;
     private ImageView BTState[]=new ImageView[4];
@@ -44,6 +44,12 @@ public class BTViewFace {
         BTState[2] = (ImageView) face.findViewById(R.id.headerState2);
         BTState[3] = (ImageView) face.findViewById(R.id.headerState3);
         BTScanerState  = (ImageView) face.findViewById(R.id.headerScanerState);
+        BTScanerState.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                scannerOnOff();
+            }
+        });
         BTStateText[0] = (TextView) face.findViewById(R.id.headerStateText0);
         BTStateText[1] = (TextView) face.findViewById(R.id.headerStateText1);
         BTStateText[2] = (TextView) face.findViewById(R.id.headerStateText2);
@@ -53,7 +59,16 @@ public class BTViewFace {
             BTState[i].setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    if (idx>=SensorMaxNumber)
+                        return;
+                    new ListBoxDialog(face, MenuItems, getSensorName(sensorList.get(idx)), new ListBoxListener() {
+                        @Override
+                        public void onSelect(int index) {
+                            procMenuItem(sensorList.get(idx),index);
+                            }
+                        @Override
+                        public void onLongSelect(int index) {}
+                        }).create();
                     }
                 });
             }
@@ -84,28 +99,61 @@ public class BTViewFace {
         int idx = sensorList.indexOf(receiver);
         if (idx!=-1 && idx < SensorMaxNumber)
             face.popupInfo(getSensorName(receiver)+":"+text);
-    }
-    private void setBTState(BTReceiver receiver,int state){
-        int idx = sensorList.indexOf(receiver);
-        if (idx!=-1 && idx < SensorMaxNumber){
-            BTStateInt[idx]=state;
-            BTState[idx].setImageResource(BTStateID[state]);
-            BTStateText[idx].setText(getSensorName(true,receiver));
         }
+    private void setBTName(final BTReceiver receiver){
+        face.guiCall(new Runnable() {
+            @Override
+            public void run() {
+                int idx = sensorList.indexOf(receiver);
+                if (idx!=-1 && idx < SensorMaxNumber){
+                    BTStateText[idx].setText(getSensorName(true,receiver));
+                }
+            }
+        });
     }
-    private void setBTState(BTReceiver receiver){
-        int idx = sensorList.indexOf(receiver);
-        if (idx!=-1 && idx < SensorMaxNumber){
-            BTState[idx].setImageResource(BTStateID[idx]);
-            BTStateText[idx].setText(getSensorName(true,receiver));
+    private void setBTState(final BTReceiver receiver,final int state){
+        face.guiCall(new Runnable() {
+            @Override
+            public void run() {
+                int idx = sensorList.indexOf(receiver);
+                if (idx!=-1 && idx < SensorMaxNumber){
+                    BTStateInt[idx]=state;
+                    BTState[idx].setImageResource(BTStateID[state]);
+                }
+            }
+        });
+    }
+    private void setBTState(final BTReceiver receiver){
+        face.guiCall(new Runnable() {
+            @Override
+            public void run() {
+                int idx = sensorList.indexOf(receiver);
+                if (idx!=-1 && idx < SensorMaxNumber){
+                    BTState[idx].setImageResource(BTStateID[idx]);
+                    BTStateText[idx].setText(getSensorName(true,receiver));
+                }
+            }
+        });
+    }
+    private void setBTStateText(final BTReceiver receiver,final String text){
+        face.guiCall(new Runnable() {
+            @Override
+            public void run() {
+                int idx = sensorList.indexOf(receiver);
+                if (idx!=-1 && idx < SensorMaxNumber){
+                    BTStateText[idx].setText(text);
+                }
+            }
+        });
+    }
+
+    private boolean scannerOn=false;
+    public void scannerOnOff(){
+        if (!scannerOn)
+            blueToothOn();
+        else
+            scannerOff();
         }
-    }
-    private void setBTStateText(BTReceiver receiver,String text){
-        int idx = sensorList.indexOf(receiver);
-        if (idx!=-1 && idx < SensorMaxNumber){
-            BTStateText[idx].setText(text);
-        }
-    }
     public void blueToothOn(){
         blueToothOff();
         BluetoothAdapter bluetooth= BluetoothAdapter.getDefaultAdapter();
@@ -166,9 +214,10 @@ public class BTViewFace {
                     .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
                     .setReportDelay(0L)
                     .build();
-            scanner.startScan(filters, scanSettings, scanCallback);
+            scanner.startScan(filters, scanSettings, BTScanCallback);
             initView();
             face.popupAndLog("Сканирование началось");
+            scannerOn=true;
             scannerHandler.postDelayed(scanerTimeOut,face.BT_SCANNING_TIME_IN_SEC*1000);
             }
         else{
@@ -185,7 +234,7 @@ public class BTViewFace {
         }
     public void startScanner(){
         if (scanner!=null)
-            scanner.stopScan(scanCallback);
+            scanner.stopScan(BTScanCallback);
         setBTScanerState(BT_Gray);
         }
     //----------------------------------------------------------------------------------------------
@@ -227,14 +276,18 @@ public class BTViewFace {
             });
         }
     //----------------------------------------------------------------------------------------------
+    private void scannerOff(){
+        if (scanner!=null)
+            scanner.stopScan(BTScanCallback);
+        setBTScanerState(BT_Gray);
+        scannerOn=false;
+        }
     Handler scannerHandler = new Handler();
     Runnable scanerTimeOut = new Runnable() {
         @Override
         public void run() {
             face.addToLog("Тайм-аут сканирования");
-            if (scanner!=null)
-                scanner.stopScan(scanCallback);
-            setBTScanerState(BT_Gray);
+            scannerOff();
             }
         };
     public String getSensorName(BTReceiver receiver){
@@ -251,7 +304,7 @@ public class BTViewFace {
         return false;
         }
     //----------------------------------------------------------------------------------------------
-    private final ScanCallback scanCallback = new ScanCallback() {
+    private final ScanCallback BTScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             BluetoothDevice device = result.getDevice();
@@ -264,7 +317,7 @@ public class BTViewFace {
             }
             if (device.getName().startsWith(face.BT_SENSOR_NAME_PREFIX)){
                 face.addToLog(true,"BlueTooth: "+device.getName()+" подключение");
-                BTReceiver receiver = new BTReceiver(face,BTBack);
+                BTReceiver receiver = new BTReceiver(BTViewFace.this,BTBack);
                 receiver.blueToothOn(device);
                 sensorList.add(receiver);
                 }
@@ -283,20 +336,63 @@ public class BTViewFace {
         @Override
         public void onReceive(BTReceiver sensor, LEP500File file){
             face.saveBTFile(sensor,file);
-            setBTState(sensor);
+            setBTState(sensor,BT_Green);
+            setBTName(sensor);
             }
         @Override
         public void onState(BTReceiver sensor, int state) {
             setBTState(sensor,state);
-        }
+            }
         @Override
         public void onStateText(BTReceiver sensor, String text) {
             setBTStateText(sensor,text);
-        }
+            }
         @Override
         public void onPopup(BTReceiver sensor, String text) {
             setBTPopup(sensor,text);
-        }
+            }
     };
+    //------------------------------------------------------------------------------------------
+    private String[] MenuItems = {
+        "Выключить",
+        "Измерение",
+        "Имя датчика",
+        "Уровень заряда",
+        "Прервать"
+        };
 
-}
+    public void procMenuItem(final BTReceiver receiver, final int index) {
+        switch (index) {
+    case 0:
+            receiver.deviceOff();
+            receiver.blueToothOff();
+            break;
+    case 1:
+            String name = getSensorName(receiver).replace("_","-");
+            LEP500File file = new LEP500File(face.set,name,face.gpsService.lastGPS());
+            receiver.startMeasure(file,false);
+            break;
+    case 2:
+            final BTDescriptor descriptor = face.set.addressMap.get(receiver.getSensorMAC());
+            new OneParameterDialog(face, "Имя датчика",receiver.getSensorMAC(),descriptor==null ? "" : descriptor.btName, false, new EventListener() {
+                @Override
+                public void onEvent(String ss) {
+                    if (descriptor!=null)
+                        descriptor.btName = ss;
+                    else
+                        face.set.knownSensors.add(new BTDescriptor(ss,receiver.getSensorMAC()));
+                    face.set.createMaps();
+                    face.saveSettings();
+                    BTStateText[index].setText(getSensorName(receiver));
+                    }
+                });
+            break;
+    case 3:
+            receiver.getChargeLevel();
+            break;
+    case 4:
+           receiver.stopMeasure();
+           break;
+           }
+        }
+    }
