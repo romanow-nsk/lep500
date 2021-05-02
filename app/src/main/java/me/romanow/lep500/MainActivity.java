@@ -35,6 +35,9 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
@@ -46,6 +49,7 @@ import romanow.snn_simulator.layer.LayerStatistic;
 
 public class MainActivity extends AppCompatActivity {
     public BTViewFace btViewFace = new BTViewFace(this);
+    public YandexDiskService yadisk = new YandexDiskService(this);
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
     LEP500Settings set = new LEP500Settings();
@@ -604,11 +608,12 @@ public class MainActivity extends AppCompatActivity {
             "Конвертировать в wave",
             "Список сенсоров",
             "Очистить список",
-            "Просмотр волны"
+            "Просмотр волны",
+            "Выгрузка в Yandex-disk"
             };
     public void procMenuItem(int index) {
         switch (index){
-case 0: selectFromArchive();
+case 0: selectFromArchive("Проcмотр архива",archiveProcView);
         break;
 case 1: preloadFromText(CHOOSE_RESULT_COPY);
         break;
@@ -620,7 +625,7 @@ case 3: fullInfo=true;
         hideFFTOutput=false;
         preloadFromText(CHOOSE_RESULT);
         break;
-case 4: deleteDialog();
+case 4: selectFromArchive("Удалить из архива",deleteSelector);
         break;
 case 5: log.removeAllViews();
         break;
@@ -641,7 +646,7 @@ case 8: LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
         BTReceiver receiver = new BTReceiver(btViewFace,btViewFace.BTBack);
         receiver.startMeasure(file2,true);
         break;
-case 9: convertDialog();
+case 9: selectFromArchive("Конвертировать в wave",convertSelector);
         break;
 case 10:for(BTDescriptor descriptor : set.knownSensors)
             addToLog("Датчик: "+descriptor.btName+": "+descriptor.btMAC);
@@ -650,59 +655,54 @@ case 11:set.knownSensors.clear();
         set.createMaps();
         saveSettings();
         break;
-case 12: showWaveForm();
+case 12:showWaveForm();
+        break;
+case 13:selectFromArchive("Выгрузка в Yandex-disk",convertSelector);
         break;
         }
     }
     //----------------------------------------------------------------------------------------------
-    public void deleteDialog(){
-        createArchive();
-        ArrayList<String> out = new ArrayList<>();
-        for(FileDescription ff : archive.fileList)
-            out.add(ff.toString());
-        new ListBoxDialog(this, out, "Удалить из архива", new ListBoxListener() {
-            @Override
-            public void onSelect(int index) {
-                File file = new File(androidFileDirectory()+"/"+archive.fileList.get(index).originalFileName);
-                file.delete();
-                createArchive();
-                }
-            @Override
-            public void onLongSelect(int index) {}
-            }).create();
-        }
-    public void convertDialog(){
-        createArchive();
-        ArrayList<String> out = new ArrayList<>();
-        for(FileDescription ff : archive.fileList)
-            out.add(ff.toString());
-        new ListBoxDialog(this, out, "Конвертировать в wave", new ListBoxListener() {
-            @Override
-            public void onSelect(int index) {
-                String pathName = androidFileDirectory()+"/"+archive.fileList.get(index).originalFileName;
-                FFTAudioTextFile xx = new FFTAudioTextFile();
-                xx.setnPoints(set.nTrendPoints);
-                hideFFTOutput=false;
-                xx.convertToWave(pathName, back);
-                }
-            @Override
-            public void onLongSelect(int index) {}
-        }).create();
-    }
-
-    public  void procOnClick(int index,boolean longClick){
-        FileDescription fd = archive.fileList.get(index);
-        String fname = fd.originalFileName;
-        try {
-            fullInfo=longClick;
-            hideFFTOutput=!longClick;
-            FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
-            addToLog(fd.toString(),greatTextSize);
-            processInputStream(fis);
+    private  I_ArchveSelector uploadSelector = new I_ArchveSelector() {
+        @Override
+        public void onSelect(FileDescription fd, boolean longClick) {
+            File file = new File(androidFileDirectory()+"/"+fd.originalFileName);
+            yadisk.init();
+            }
+        };
+    private  I_ArchveSelector deleteSelector = new I_ArchveSelector() {
+        @Override
+        public void onSelect(FileDescription fd, boolean longClick) {
+            File file = new File(androidFileDirectory()+"/"+fd.originalFileName);
+            file.delete();
+            createArchive();
+            }
+        };
+    private  I_ArchveSelector convertSelector = new I_ArchveSelector() {
+        @Override
+        public void onSelect(FileDescription fd, boolean longClick) {
+            String pathName = androidFileDirectory()+"/"+fd.originalFileName;
+            FFTAudioTextFile xx = new FFTAudioTextFile();
+            xx.setnPoints(set.nTrendPoints);
+            hideFFTOutput=false;
+            xx.convertToWave(pathName, back);
+            }
+        };
+    //----------------------------------------------------------------------------------------------
+    private I_ArchveSelector archiveProcView = new I_ArchveSelector() {
+        @Override
+        public void onSelect(FileDescription fd, boolean longClick) {
+            String fname = fd.originalFileName;
+            try {
+                fullInfo=longClick;
+                hideFFTOutput=!longClick;
+                FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
+                addToLog(fd.toString(),greatTextSize);
+                processInputStream(fis);
             } catch (Throwable e) {
                 addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
                 }
-        }
+            }
+        };
     //----------------------------------------------------------------------------------------------
     View.OnClickListener waveStartEvent = new View.OnClickListener() {
         @Override
@@ -785,19 +785,19 @@ case 12: showWaveForm();
                 }
         }
 
-    public void selectFromArchive(){
+    public void selectFromArchive(String title, final I_ArchveSelector selector){
         createArchive();
         ArrayList<String> out = new ArrayList<>();
         for(FileDescription ff : archive.fileList)
             out.add(ff.toString());
-        new ListBoxDialog(this, out, "Проcмотр архива", new ListBoxListener() {
+        new ListBoxDialog(this, out, title, new ListBoxListener() {
             @Override
             public void onSelect(int index) {
-                procOnClick(index,false);
+                selector.onSelect(archive.fileList.get(index),false);
                 }
             @Override
             public void onLongSelect(int index) {
-                procOnClick(index,true);
+                selector.onSelect(archive.fileList.get(index),true);
                 }
             }).create();
         }
@@ -906,6 +906,6 @@ case 12: showWaveForm();
                 saveSettings();
                 }
             });
-    }
+        }
 
 }

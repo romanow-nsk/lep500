@@ -30,4 +30,5 @@ dependencies {
     implementation files('libs\\GraphView-3.1.4.jar')
     implementation files('libs\\gson-2.8.6.jar')
     implementation files('libs\\joda-time-2.10.9.jar')
+    implementation files('libs\\disk-restapi-sdk-1.03.jar')
 }
