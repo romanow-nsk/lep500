@@ -16,7 +16,9 @@ import com.jjoe64.graphview.GraphViewSeries;
 import com.jjoe64.graphview.LineGraphView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
+import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.view.Gravity;
 import android.view.View;
@@ -35,9 +37,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
@@ -50,6 +49,7 @@ import romanow.snn_simulator.layer.LayerStatistic;
 public class MainActivity extends AppCompatActivity {
     public BTViewFace btViewFace = new BTViewFace(this);
     public YandexDiskService yadisk = new YandexDiskService(this);
+    public MailSender mail = new MailSender(this);
     private FFT fft = new FFT();
     private LayerStatistic inputStat = new LayerStatistic("Входные данные");
     LEP500Settings set = new LEP500Settings();
@@ -597,6 +597,7 @@ public class MainActivity extends AppCompatActivity {
     //------------------------------------------------------------------------
     private String[] MenuItems = {
             "Архив",
+            "Архив подробно",
             "Файл в архив",
             "Файл кратко",
             "Файл подробно",
@@ -609,29 +610,31 @@ public class MainActivity extends AppCompatActivity {
             "Список сенсоров",
             "Очистить список",
             "Просмотр волны",
-            "Выгрузка в Yandex-disk"
+            "Отправить из архива"
             };
     public void procMenuItem(int index) {
         switch (index){
 case 0: selectFromArchive("Проcмотр архива",archiveProcView);
         break;
-case 1: preloadFromText(CHOOSE_RESULT_COPY);
+case 1: selectFromArchive("Проcмотр архива",archiveProcViewFull);
         break;
-case 2: fullInfo=false;
+case 2: preloadFromText(CHOOSE_RESULT_COPY);
+        break;
+case 3: fullInfo=false;
         hideFFTOutput=true;
         preloadFromText(CHOOSE_RESULT);
         break;
-case 3: fullInfo=true;
+case 4: fullInfo=true;
         hideFFTOutput=false;
         preloadFromText(CHOOSE_RESULT);
         break;
-case 4: selectFromArchive("Удалить из архива",deleteSelector);
+case 5: selectFromArchive("Удалить из архива",deleteSelector);
         break;
-case 5: log.removeAllViews();
+case 6: log.removeAllViews();
         break;
-case 6: new SettingsMenu(this);
+case 7: new SettingsMenu(this);
         break;
-case 7: btViewFace.selectSensorGroup(new SensorGroupListener() {
+case 8: btViewFace.selectSensorGroup(new SensorGroupListener() {
             @Override
             public void onSensor(ArrayList<BTReceiver> receiverList) {
                 for(BTReceiver receiver :  receiverList){
@@ -642,22 +645,22 @@ case 7: btViewFace.selectSensorGroup(new SensorGroupListener() {
                 }
             });
         break;
-case 8: LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
+case 9: LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
         BTReceiver receiver = new BTReceiver(btViewFace,btViewFace.BTBack);
         receiver.startMeasure(file2,true);
         break;
-case 9: selectFromArchive("Конвертировать в wave",convertSelector);
+case 10:selectFromArchive("Конвертировать в wave",convertSelector);
         break;
-case 10:for(BTDescriptor descriptor : set.knownSensors)
+case 11:for(BTDescriptor descriptor : set.knownSensors)
             addToLog("Датчик: "+descriptor.btName+": "+descriptor.btMAC);
         break;
-case 11:set.knownSensors.clear();
+case 12:set.knownSensors.clear();
         set.createMaps();
         saveSettings();
         break;
-case 12:showWaveForm();
+case 13:showWaveForm();
         break;
-case 13:selectFromArchive("Выгрузка в Yandex-disk",convertSelector);
+case 14:selectFromArchive("Отправить Mail",sendMailSelector);
         break;
         }
     }
@@ -687,22 +690,60 @@ case 13:selectFromArchive("Выгрузка в Yandex-disk",convertSelector);
             xx.convertToWave(pathName, back);
             }
         };
-    //----------------------------------------------------------------------------------------------
-    private I_ArchveSelector archiveProcView = new I_ArchveSelector() {
+    private  I_ArchveSelector sendMailSelector = new I_ArchveSelector() {
         @Override
         public void onSelect(FileDescription fd, boolean longClick) {
-            String fname = fd.originalFileName;
             try {
-                fullInfo=longClick;
-                hideFFTOutput=!longClick;
-                FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
-                addToLog(fd.toString(),greatTextSize);
-                processInputStream(fis);
+                //SendMail sm = new SendMail(MainActivity.this, fd);
+                //sm.execute();
+                //try{
+                //    mail.sendMail(fd);
+                //    } catch (Exception ee){
+                //        addToLog("Ошибка mail: "+ee.toString());
+                //        }
+                final Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND);
+                emailIntent.setType("plain/text");
+                emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, new String[]{set.mailToSend});
+                emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Датчик: " + fd.toString());
+                emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, "");
+                String filePath = androidFileDirectory() + "/" + fd.originalFileName;
+                addToLog(filePath);
+                File ff = new File(filePath);
+                //Uri fileUri = FileProvider.getUriForFile(MainActivity.this, "me.romanow.lep500", ff);
+                emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.parse(filePath));
+                //emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.fromFile(ff));
+                emailIntent.setType("text/text");
+                startActivity(Intent.createChooser(emailIntent, "Отправка письма..."));
+                } catch (Exception ee){
+                    addToLog("Ошибка mail: "+ee.toString());
+                    }
+            }
+        };
+    //----------------------------------------------------------------------------------------------
+    private void procArchive(FileDescription fd, boolean longClick){
+        String fname = fd.originalFileName;
+        try {
+            fullInfo=longClick;
+            hideFFTOutput=!longClick;
+            FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
+            addToLog(fd.toString(),greatTextSize);
+            processInputStream(fis);
             } catch (Throwable e) {
                 addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
                 }
+        }
+    private I_ArchveSelector archiveProcView = new I_ArchveSelector() {
+        @Override
+        public void onSelect(FileDescription fd, boolean longClick) {
+            procArchive(fd,false);
             }
         };
+    private I_ArchveSelector archiveProcViewFull = new I_ArchveSelector() {
+        @Override
+        public void onSelect(FileDescription fd, boolean longClick) {
+            procArchive(fd,true);
+        }
+    };
     //----------------------------------------------------------------------------------------------
     View.OnClickListener waveStartEvent = new View.OnClickListener() {
         @Override

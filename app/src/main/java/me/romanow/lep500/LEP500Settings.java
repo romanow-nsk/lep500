@@ -18,6 +18,13 @@ public class LEP500Settings {
     String measureTitle="Опора 125";    // Подпись опоры
     int measureCounter=1;               // Счетчик измерения
     boolean fullInfo=false;
+    String mailHost="mail.nstu.ru";
+    String mailBox="romanow@corp.nstu.ru";
+    String mailPass="Longlivernr123";
+    String mailSecur="starttls";
+    int mailPort=587;
+    String mailToSend="romanow@ngs.ru";
+
     ArrayList<BTDescriptor> knownSensors=new ArrayList<>();
     //---------------------------------------------------------------------------
     transient HashMap<String,BTDescriptor> nameMap = new HashMap<>();
