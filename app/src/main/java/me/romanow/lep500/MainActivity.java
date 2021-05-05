@@ -709,9 +709,12 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
                 String filePath = androidFileDirectory() + "/" + fd.originalFileName;
                 addToLog(filePath);
                 File ff = new File(filePath);
-                //Uri fileUri = FileProvider.getUriForFile(MainActivity.this, "me.romanow.lep500", ff);
-                emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.parse(filePath));
+                emailIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Uri fileUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID, ff);
+                emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,fileUri);
+                //--------------- Старое -------------------------------------------------------
                 //emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.fromFile(ff));
+                //emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.parse(filePath));
                 emailIntent.setType("text/text");
                 startActivity(Intent.createChooser(emailIntent, "Отправка письма..."));
                 } catch (Exception ee){
