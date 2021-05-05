@@ -604,7 +604,7 @@ public class MainActivity extends AppCompatActivity {
             "Удалить из архива",
             "Очистить ленту",
             "Настройки",
-            "Измерение-группа",
+            "Измерение",
             "Образец",
             "Конвертировать в wave",
             "Список сенсоров",
@@ -748,7 +748,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
     View.OnClickListener waveStartEvent = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            new OneParameterDialog(MainActivity.this, "Параметр графика", "Начало (сек)", "" + waveStartTime, false, new EventListener() {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Начало (сек)", "" + waveStartTime, false, false,new EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     try {
@@ -770,7 +770,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
     View.OnClickListener waveMasEvent = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            new OneParameterDialog(MainActivity.this, "Параметр графика", "Масштаб", "" + waveMas, false, new EventListener() {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Масштаб", "" + waveMas, false, false,new EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     try {
@@ -935,7 +935,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
             popupAndLog("Датчик с именем: "+btViewFace.getSensorName(receiver));
             return;
             }
-        new OneParameterDialog(this, "Имя датчика",receiver.getSensorMAC(),"", false, new EventListener() {
+        new OneParameterDialog(this, "Имя датчика",receiver.getSensorMAC(),"", false, true,new EventListener() {
             @Override
             public void onEvent(String ss) {
                 if (set.nameMap.get(ss)!=null){

@@ -374,7 +374,7 @@ public class BTViewFace {
             break;
     case 2:
             final BTDescriptor descriptor = face.set.addressMap.get(receiver.getSensorMAC());
-            new OneParameterDialog(face, "Имя датчика",receiver.getSensorMAC(),descriptor==null ? "" : descriptor.btName, false, new EventListener() {
+            new OneParameterDialog(face, "Имя датчика",receiver.getSensorMAC(),descriptor==null ? "" : descriptor.btName, false, true,new EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     if (descriptor!=null)

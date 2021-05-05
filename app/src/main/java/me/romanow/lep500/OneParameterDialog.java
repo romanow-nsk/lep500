@@ -3,6 +3,7 @@ package me.romanow.lep500;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -20,9 +21,9 @@ public class OneParameterDialog {
     private Activity base;
 
     private LinearLayout createItem(String name, String value,final EventListener lsn){
-        return createItem(name,value,false,lsn);
+        return createItem(name,value,false,false,lsn);
         }
-    private LinearLayout createItem(String name, String value, boolean shortSize,final EventListener lsn){
+    private LinearLayout createItem(String name, String value, boolean shortSize,boolean textType,final EventListener lsn){
         LinearLayout xx=(LinearLayout)base.getLayoutInflater().inflate(
                 shortSize ? R.layout.settings_item_short : R.layout.settings_item, null);
         xx.setPadding(5, 5, 5, 5);
@@ -37,6 +38,7 @@ public class OneParameterDialog {
                 }
             });
         img.setClickable(true);
+        tt.setInputType(textType ? InputType.TYPE_CLASS_TEXT : InputType.TYPE_CLASS_NUMBER);
         tt.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -49,7 +51,7 @@ public class OneParameterDialog {
         return xx;
         }
 
-    public OneParameterDialog(Activity base0, String title, String parName, String parValue, boolean shortSize, final  EventListener listener){
+    public OneParameterDialog(Activity base0, String title, String parName, String parValue, boolean shortSize, boolean textType,final  EventListener listener){
         base = base0;
         try {
             myDlg=new AlertDialog.Builder(base).create();
@@ -69,7 +71,7 @@ public class OneParameterDialog {
                     myDlg.cancel();
                     }
                 });
-            LinearLayout layout = createItem(parName, parValue, shortSize,new EventListener(){
+            LinearLayout layout = createItem(parName, parValue, shortSize,textType,new EventListener(){
                 @Override
                 public void onEvent(String ss) {
                     listener.onEvent(ss);

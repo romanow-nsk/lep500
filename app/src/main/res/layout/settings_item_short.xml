@@ -6,7 +6,7 @@
     android:background="#FF202020"
     >
     <TextView style="@style/BlackButton"
-        android:layout_width="120dp"
+        android:layout_width="80dp"
         android:layout_height="35dp"
         android:textSize="20dp"
         android:id="@+id/dialog_settings_name"

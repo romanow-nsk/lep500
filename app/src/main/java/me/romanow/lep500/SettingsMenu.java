@@ -2,6 +2,8 @@ package me.romanow.lep500;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.icu.lang.UCharacter;
+import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.*;
@@ -18,9 +20,9 @@ public class SettingsMenu {
         dialogMain();
         }
     private LinearLayout createItem(String name, String value,final EventListener lsn){
-        return createItem(name,value,false,lsn);
+        return createItem(name,value,false,false,lsn);
         }
-    private LinearLayout createItem(String name, String value, boolean shortSize,final EventListener lsn){
+    private LinearLayout createItem(String name, String value, boolean shortSize,boolean textType,final EventListener lsn){
         LinearLayout xx=(LinearLayout)base.getLayoutInflater().inflate(
                 shortSize ? R.layout.settings_item_short : R.layout.settings_item, null);
         xx.setPadding(5, 5, 5, 5);
@@ -35,6 +37,7 @@ public class SettingsMenu {
                 }
             });
         img.setClickable(true);
+        tt.setInputType(textType ? InputType.TYPE_CLASS_TEXT : InputType.TYPE_CLASS_NUMBER);
         tt.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -178,7 +181,7 @@ public class SettingsMenu {
                 }
             });
             trmain.addView(layout);
-            layout = createListBox("Функ.окна", FFT.winFuncList, base.set.winFun, new ListBoxListener() {
+            layout = createListBox("Окно БПФ", FFT.winFuncList, base.set.winFun, new ListBoxListener() {
                 @Override
                 public void onSelect(int index) {
                     base.set.winFun = index;
@@ -188,14 +191,14 @@ public class SettingsMenu {
                 public void onLongSelect(int index) {}
                 });
             trmain.addView(layout);
-            layout = createItem("Группа", base.set.measureGroup, true,new EventListener(){
+            layout = createItem("Группа", base.set.measureGroup, true,true,new EventListener(){
                 @Override
                 public void onEvent(String ss) {
                     base.set.measureGroup=ss;
                     settingsChanged();
                     }});
             trmain.addView(layout);
-            layout = createItem("Опора", base.set.measureTitle, true,new EventListener(){
+            layout = createItem("Опора", base.set.measureTitle, true,true,new EventListener(){
                 @Override
                 public void onEvent(String ss) {
                     base.set.measureTitle=ss;
@@ -212,6 +215,15 @@ public class SettingsMenu {
                             base.popupInfo("Формат числа");}
                         }
                 });
+            trmain.addView(layout);
+            layout = createItem("Mail ", ""+base.set.mailToSend, true,true,new EventListener(){
+                @Override
+                public void onEvent(String ss) {
+                    base.set.mailToSend=ss;
+                    settingsChanged();
+                    }
+                });
+            trmain.addView(layout);
             layout = createItem("Данные отладки", base.set.fullInfo ? "1" : "0" , new EventListener(){
                 @Override
                 public void onEvent(String ss) {
