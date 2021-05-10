@@ -46,7 +46,7 @@ import romanow.snn_simulator.fft.FFTParams;
 import romanow.snn_simulator.layer.Extreme;
 import romanow.snn_simulator.layer.LayerStatistic;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
     public YandexDiskService yadisk = new YandexDiskService(this);
     public MailSender mail = new MailSender(this);
