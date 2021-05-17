@@ -49,8 +49,6 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
     public YandexDiskService yadisk = new YandexDiskService(this);
     public MailSender mail = new MailSender(this);
-    private FFT fft = new FFT();
-    private LayerStatistic inputStat = new LayerStatistic("Входные данные");
     LEP500Settings set = new LEP500Settings();
     //-------------- Постоянные параметры snn-core ---------------------------------------
     public Thread guiThead;
@@ -64,14 +62,17 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
     private final int DispMode=0x02;
     private final int MiddleColor = 0x0000FF00;
     private final int DispColor = 0x000000FF;
+    private final int paintColors[]={0x0000FF00,0x000000FF,0x0000FFFF,0x00FF00FF};
+    private int colorNum=0;
     private final int GraphBackColor = 0x00A0C0C0;
     final static String archiveFile="LEP500Archive.json";
+    private LineGraphView multiGraph=null;
     //------------------------------------------------------------------------------------
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
     private int noLastPoints=1000;
-    private boolean fullInfo=false;         // Вывод полной инофрмации о спектре
-    private boolean hideFFTOutput=false;
+    public  boolean fullInfo=false;         // Вывод полной информации о спектре
+    public boolean hideFFTOutput=false;
     private DataDesription archive = new DataDesription();
     private double freqStep = 0;
     private int waveMas=1;
@@ -180,7 +181,7 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
         saveSettings();
         }
     private void calcFirstLastPoints(){
-        int width=fft.getParams().W();
+        int width=set.p_BlockSize*FFT.Size0;
         double df = 100./width;
         noFirstPoints = (int)(set.FirstFreq/df);
         noLastPoints = (int)((50-set.LastFreq)/df);
@@ -275,7 +276,7 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
         return result;
         }
 
-    public void processInputStream(InputStream is) throws Throwable{
+    public void processInputStream(InputStream is, String title) throws Throwable{
         FFTAudioTextFile xx = new FFTAudioTextFile();
         xx.setnPoints(set.nTrendPoints);
         xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
@@ -286,6 +287,7 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
         FFTParams params = new FFTParams().W(set.p_BlockSize*FFT.Size0).procOver(set.p_OverProc).
                 FFTWindowReduce(false).p_Cohleogram(false).p_GPU(false).compressMode(false).
                 winMode(set.winFun);
+        FFT fft = new FFT();
         fft.setFFTParams(params);
         fft.calcFFTParams();
         freqStep = fft.getStepHZLinear()/KF100;
@@ -295,8 +297,9 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
             addToLog("Перекрытие: "+set.p_OverProc);
             addToLog("Дискретность: "+String.format("%5.4f",freqStep)+" гц");
             }
-        inputStat.reset();
-        fft.fftDirect(xx,back);
+        //inputStat.reset();
+        //fft.fftDirect(xx,back);
+        fft.fftDirect(xx,new FFTAdapter(this,title));
         }
 
     public Pair<InputStream, FileDescription> openSelected(Intent data) throws FileNotFoundException {
@@ -334,10 +337,11 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
                 popupAndLog("BlueTooth включен, повторите команду");
                 }
             if(requestCode == CHOOSE_RESULT) {
-                InputStream is = openSelected(data).o1;
+                Pair<InputStream, FileDescription> res = openSelected(data);
+                InputStream is = res.o1;
                 if (is==null)
                     return;
-                processInputStream(is);
+                processInputStream(is,res.o2.toString());
                 }
             if(requestCode == CHOOSE_RESULT_COPY) {
                 final Pair<InputStream, FileDescription> pp = openSelected(data);
@@ -383,7 +387,7 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
         return out;
         }
 
-    private void showExtrems(boolean mode){
+    private void showExtrems(LayerStatistic inputStat, boolean mode){
         int sz = inputStat.getMids().length;
         addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
         ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true);
@@ -406,11 +410,11 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
 
-    private void showStatistic(){
-        showExtrems(true);
-        showExtrems(false);
+    public synchronized void showStatistic(LayerStatistic inputStat){
+        showExtrems(inputStat, true);
+        showExtrems(inputStat, false);
         }
-    private void showShort(){
+    public synchronized void showShort(LayerStatistic inputStat){
         ArrayList<Extreme> list = inputStat.createExtrems(true,noFirstPoints,noLastPoints,true);
         if (list.size()==0){
             addToLog("Экстремумов не найдено",greatTextSize);
@@ -418,56 +422,6 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
             }
         addToLog(String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize);
         }
-    //--------------------------------------------------------------------------
-    private FFTCallBack back = new FFTCallBack(){
-        @Override
-        public void onStart(float msOnStep) {
-            }
-        @Override
-        public void onFinish() {
-            calcFirstLastPoints();
-            if (inputStat.getCount()==0){
-                popupAndLog("Настройки: короткий период измерений/много блоков");
-                return;
-                }
-            inputStat.smooth(set.kSmooth);
-            if (fullInfo)
-                showStatistic();
-            else
-                showShort();
-            addGraphView(inputStat,MiddleMode);
-            addToLog("");
-            }
-        @Override
-        public boolean onStep(int nBlock, int calcMS, float totalMS, FFT fft) {
-                long tt = System.currentTimeMillis();
-                float lineSpectrum[] = fft.getSpectrum();
-                boolean xx;
-                try {
-                    inputStat.addStatistic(lineSpectrum);
-                    } catch (Exception ex) {
-                        addToLog(createFatalMessage(ex,10));
-                        return false;
-                        }
-                return true;
-            }
-        @Override
-        public void onError(Exception ee) {
-            addToLog(createFatalMessage(ee,10));
-            }
-        @Override
-        public void onMessage(String mes) {
-            if (!hideFFTOutput)
-                addToLog(mes);
-            }
-    };
-
-    //@Override
-    //public boolean onCreateOptionsMenu(Menu menu) {
-    //    // Inflate the menu; this adds items to the action bar if it is present.
-    //    getMenuInflater().inflate(R.menu.menu_main, menu);
-    //    return true;
-    //}
 
     //--------------------------------------------------------------------------------------------------------
     public void popupToast(int viewId, String ss) {
@@ -506,21 +460,20 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
         graphView.addSeries(series);
         }
 
-    private void addGraphView(LayerStatistic stat, int mode){
+    public synchronized void addGraphView(LayerStatistic inputStat){
+        paintOne(multiGraph,inputStat.getMids(),paintColors[colorNum],0,0,true);
+        colorNum++;
+        }
+    public void createMultiGraph(){
         LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
         LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
-        LineGraphView graphView = new LineGraphView(this,"");
-        graphView.setScalable(true);
-        graphView.setScrollable(true);
-        graphView.getGraphViewStyle().setTextSize(15);
-        panel.addView(graphView);
+        multiGraph = new LineGraphView(this,"");
+        multiGraph.setScalable(true);
+        multiGraph.setScrollable(true);
+        multiGraph.getGraphViewStyle().setTextSize(15);
+        panel.addView(multiGraph);
         log.addView(lrr);
-        if ((mode & MiddleMode)!=0)
-            paintOne(graphView,inputStat.getMids(),MiddleColor,noFirstPoints,noFirstPoints,true);
-        if ((mode & DispMode)!=0)
-            paintOne(graphView,inputStat.getDisps(),DispColor,noFirstPoints,noFirstPoints,true);
         }
-
     //--------------------------------------------------------------------------
     public final String androidFileDirectory(){
         return getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
@@ -613,9 +566,13 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
             };
     public void procMenuItem(int index) {
         switch (index){
-case 0: selectFromArchive("Проcмотр архива",archiveProcView);
+case 0: calcFirstLastPoints();
+        colorNum=0;
+        selectMultiFromArchive("Проcмотр архива",procViewMultiSelector);
         break;
-case 1: selectFromArchive("Проcмотр архива",archiveProcViewFull);
+case 1: calcFirstLastPoints();
+        colorNum=0;
+        selectMultiFromArchive("Проcмотр архива",procViewMultiSelectorFull);
         break;
 case 2: preloadFromText(CHOOSE_RESULT_COPY);
         break;
@@ -627,7 +584,7 @@ case 4: fullInfo=true;
         hideFFTOutput=false;
         preloadFromText(CHOOSE_RESULT);
         break;
-case 5: selectMultiFromArchive("Удалить из архива",deleteSelector2);
+case 5: selectMultiFromArchive("Удалить из архива",deleteMultiSelector);
         break;
 case 6: log.removeAllViews();
         break;
@@ -679,7 +636,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
             createArchive();
             }
         };
-    private  I_ArchveMultiSelector deleteSelector2 = new I_ArchveMultiSelector() {
+    private  I_ArchveMultiSelector deleteMultiSelector = new I_ArchveMultiSelector() {
         @Override
         public void onSelect(ArrayList<FileDescription> fd, boolean longClick) {
             for (FileDescription ff : fd){
@@ -689,6 +646,24 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
             createArchive();
             }
         };
+    private  I_ArchveMultiSelector procViewMultiSelector = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(ArrayList<FileDescription> fd, boolean longClick) {
+            createMultiGraph();
+            for (FileDescription ff : fd){
+                procArchive(ff,false);
+                }
+            }
+        };
+    private  I_ArchveMultiSelector procViewMultiSelectorFull = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(ArrayList<FileDescription> fd, boolean longClick) {
+            createMultiGraph();
+            for (FileDescription ff : fd){
+                procArchive(ff,true);
+            }
+        }
+    };
     private  I_ArchveSelector convertSelector = new I_ArchveSelector() {
         @Override
         public void onSelect(FileDescription fd, boolean longClick) {
@@ -696,7 +671,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
             FFTAudioTextFile xx = new FFTAudioTextFile();
             xx.setnPoints(set.nTrendPoints);
             hideFFTOutput=false;
-            xx.convertToWave(pathName, back);
+            xx.convertToWave(pathName, new FFTAdapter(MainActivity.this,fd.toString()));
             }
         };
     private  I_ArchveSelector sendMailSelector = new I_ArchveSelector() {
@@ -739,7 +714,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
             hideFFTOutput=!longClick;
             FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
             addToLog(fd.toString(),greatTextSize);
-            processInputStream(fis);
+            processInputStream(fis,fd.toString());
             } catch (Throwable e) {
                 addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
                 }
@@ -885,7 +860,6 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
             }).create();
     }
 
-
     public void addArchiveItemToLog(final FileDescription ff){
         View.OnClickListener listener = new View.OnClickListener() {
             @Override
@@ -895,7 +869,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
                     hideFFTOutput=true;
                     FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
                     addToLog(ff.toString(),greatTextSize);
-                    processInputStream(fis);
+                    processInputStream(fis,ff.toString());
                     } catch (Throwable e) {
                         addToLog("Файл не открыт: "+ff.originalFileName+"\n"+createFatalMessage(e,10));
                         }
@@ -909,7 +883,7 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
                     hideFFTOutput=false;
                     FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
                     addToLog(ff.toString());
-                    processInputStream(fis);
+                    processInputStream(fis,ff.toString());
                     } catch (Throwable e) {
                         addToLog("Файл не открыт: "+ff.originalFileName+"\n"+e.toString());
                         return false;
