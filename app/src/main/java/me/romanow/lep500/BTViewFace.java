@@ -264,7 +264,7 @@ public class BTViewFace {
         ArrayList<String> sensorNames = new ArrayList<>();
         for(BTReceiver receiver : sensorList)
             sensorNames.add(getSensorName(receiver));
-        new MultiListBoxDialog(face,  "Датчики (старт)", sensorNames, new MultyListBoxListener() {
+        new MultiListBoxDialog(face,  "Датчики (старт)", sensorNames, new MultiListBoxListener() {
             @Override
             public void onSelect(boolean[] selected) {
                 ArrayList<BTReceiver> out = new ArrayList<>();

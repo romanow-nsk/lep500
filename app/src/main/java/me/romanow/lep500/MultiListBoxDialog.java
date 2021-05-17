@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.view.*;
 import android.view.View.OnClickListener;
-import android.view.View.OnLongClickListener;
 import android.widget.*;
 
 import java.util.ArrayList;
@@ -15,10 +14,10 @@ import java.util.ArrayList;
 public class MultiListBoxDialog {
         boolean mark []=null;
         AlertDialog myDlg=null;
-        MultyListBoxListener ls=null;
+        MultiListBoxListener ls=null;
         boolean second=false;
         Activity parent=null;
-    public MultiListBoxDialog(Activity activity, String title, ArrayList<String> src, MultyListBoxListener ff){
+    public MultiListBoxDialog(Activity activity, String title, ArrayList<String> src, MultiListBoxListener ff){
         try {
             parent=activity;
             mark = new boolean[src.size()];

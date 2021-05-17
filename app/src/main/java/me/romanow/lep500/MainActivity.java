@@ -18,7 +18,6 @@ import com.jjoe64.graphview.LineGraphView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
-import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.view.Gravity;
 import android.view.View;
@@ -628,7 +627,7 @@ case 4: fullInfo=true;
         hideFFTOutput=false;
         preloadFromText(CHOOSE_RESULT);
         break;
-case 5: selectFromArchive("Удалить из архива",deleteSelector);
+case 5: selectMultiFromArchive("Удалить из архива",deleteSelector2);
         break;
 case 6: log.removeAllViews();
         break;
@@ -677,6 +676,16 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
         public void onSelect(FileDescription fd, boolean longClick) {
             File file = new File(androidFileDirectory()+"/"+fd.originalFileName);
             file.delete();
+            createArchive();
+            }
+        };
+    private  I_ArchveMultiSelector deleteSelector2 = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(ArrayList<FileDescription> fd, boolean longClick) {
+            for (FileDescription ff : fd){
+                File file = new File(androidFileDirectory()+"/"+ff.originalFileName);
+                file.delete();
+                }
             createArchive();
             }
         };
@@ -845,7 +854,22 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
                 }
             }).create();
         }
-
+    public void selectMultiFromArchive(String title, final I_ArchveMultiSelector selector){
+        createArchive();
+        final ArrayList<String> list = new ArrayList<>();
+        for(FileDescription ff : archive.fileList)
+            list.add(ff.toString());
+        new MultiListBoxDialog(this, title, list, new MultiListBoxListener() {
+            @Override
+            public void onSelect(boolean[] selected) {
+                ArrayList<FileDescription> out = new ArrayList<>() ;
+                for(int i=0;i<archive.fileList.size();i++)
+                    if (selected[i])
+                        out.add(archive.fileList.get(i));
+                    selector.onSelect(out,false);
+                }
+            });
+    }
     public void showWaveForm(){
         createArchive();
         ArrayList<String> out = new ArrayList<>();

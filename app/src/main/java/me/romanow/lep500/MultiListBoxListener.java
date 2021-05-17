@@ -8,6 +8,6 @@ package me.romanow.lep500;
  *
  * @author user
  */
-public interface MultyListBoxListener {
+public interface MultiListBoxListener {
     public void onSelect(boolean selected[]);
 }
