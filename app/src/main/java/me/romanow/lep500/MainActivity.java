@@ -152,7 +152,13 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
             }
         });
         btViewFace.init();
-        addToLog("Звенящие опоры России",25);
+        //------------------------------------------------
+        int[] surrogates = {0xD83D, 0xDC7D};
+        String title = "Звенящие опоры России "+
+                new String(Character.toChars(0x1F349))+
+                new String(surrogates, 0, surrogates.length)+
+                "\uD83D\uDC7D";
+        addToLog(title,20);
         }
 
     public void popupAndLog(String ss){
@@ -616,7 +622,7 @@ case 12:set.knownSensors.clear();
         break;
 case 13:showWaveForm();
         break;
-case 14:selectFromArchive("Отправить Mail",sendMailSelector);
+case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
         break;
         }
     }
@@ -674,9 +680,9 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
             xx.convertToWave(pathName, new FFTAdapter(MainActivity.this,fd.toString()));
             }
         };
-    private  I_ArchveSelector sendMailSelector = new I_ArchveSelector() {
+    private  I_ArchveMultiSelector sendMailSelector = new I_ArchveMultiSelector() {
         @Override
-        public void onSelect(FileDescription fd, boolean longClick) {
+        public void onSelect(ArrayList<FileDescription> fdlist, boolean longClick) {
             try {
                 //SendMail sm = new SendMail(MainActivity.this, fd);
                 //sm.execute();
@@ -685,21 +691,24 @@ case 14:selectFromArchive("Отправить Mail",sendMailSelector);
                 //    } catch (Exception ee){
                 //        addToLog("Ошибка mail: "+ee.toString());
                 //        }
-                final Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND);
+                final Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
                 emailIntent.setType("plain/text");
                 emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, new String[]{set.mailToSend});
-                emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Датчик: " + fd.toString());
-                emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, "");
-                String filePath = androidFileDirectory() + "/" + fd.originalFileName;
-                addToLog(filePath);
-                File ff = new File(filePath);
+                emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Звенящие опоры России");
                 emailIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                Uri fileUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID, ff);
-                emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,fileUri);
-                //--------------- Старое -------------------------------------------------------
-                //emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.fromFile(ff));
-                //emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.parse(filePath));
-                emailIntent.setType("text/text");
+                ArrayList<Uri> uris = new ArrayList<Uri>();
+                for(FileDescription fd : fdlist){
+                    emailIntent.putExtra(Intent.EXTRA_TEXT, "Датчик: " + fd.toString());
+                    String filePath = androidFileDirectory() + "/" + fd.originalFileName;
+                    addToLog(filePath);
+                    File ff = new File(filePath);
+                    Uri fileUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID, ff);
+                    uris.add(fileUri);
+                    //--------------- Старое -------------------------------------------------------
+                    //emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.fromFile(ff));
+                    //emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,Uri.parse(filePath));
+                    }
+                emailIntent.putExtra(android.content.Intent.EXTRA_STREAM,uris);
                 startActivity(Intent.createChooser(emailIntent, "Отправка письма..."));
                 } catch (Exception ee){
                     addToLog("Ошибка mail: "+ee.toString());
