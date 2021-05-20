@@ -594,9 +594,14 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
     private  I_ArchveMultiSelector toGroupSelector = new I_ArchveMultiSelector() {
         @Override
         public void onSelect(FileDescriptionList fd, boolean longClick) {
+            String subdir="xxx";
+            File dd = new File(androidFileDirectory()+"/"+subdir);
+            dd.mkdir();
             for (FileDescription ff : fd){
-                File file = new File(androidFileDirectory()+"/"+ff.originalFileName);
-                file.delete();
+                try {
+                    String src = androidFileDirectory()+"/"+ff.originalFileName;
+                    moveFile(src, androidFileDirectory()+"/"+subdir+"/"+ff.originalFileName);
+                    }catch (Exception ee){ addToLog(createFatalMessage(ee,5)); }
                 }
             }
         };
@@ -720,9 +725,8 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
     };
     //----------------------------------------------------------------------------------------------
     public void moveFile(String src, String dst) throws Exception {
-        String fname1 = androidFileDirectory()+"/"+src;
-        BufferedReader fd1 = new BufferedReader(new InputStreamReader(new FileInputStream(fname1),"Windows-1251"));
-        BufferedWriter fd2 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(androidFileDirectory()+"/"+dst),"Windows-1251"));
+        BufferedReader fd1 = new BufferedReader(new InputStreamReader(new FileInputStream(src),"Windows-1251"));
+        BufferedWriter fd2 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst),"Windows-1251"));
         String ss;
         while ((ss=fd1.readLine())!=null){
             fd2.write(ss);
@@ -731,7 +735,7 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
         fd2.flush();
         fd1.close();
         fd2.close();
-        File file = new File(fname1);
+        File file = new File(src);
         file.delete();
         }
     //----------------------------------------------------------------------------------------------
