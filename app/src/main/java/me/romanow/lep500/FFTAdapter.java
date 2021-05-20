@@ -8,8 +8,8 @@ import static me.romanow.lep500.MainActivity.createFatalMessage;
 
 public class FFTAdapter implements FFTCallBack {
     private LayerStatistic inputStat;
-    private MainActivity main;
-    public FFTAdapter(MainActivity main0,String title){
+    private GraphBaseActivity main;
+    public FFTAdapter(GraphBaseActivity main0,String title){
         inputStat = new LayerStatistic(title);
         main = main0;
         }
@@ -21,11 +21,8 @@ public class FFTAdapter implements FFTCallBack {
             main.popupAndLog("Настройки: короткий период измерений/много блоков");
             return;
             }
-        inputStat.smooth(main.set.kSmooth);
-        if (main.fullInfo)
-            main.showStatistic(inputStat);
-        else
-            main.showShort(inputStat);
+        inputStat.smooth(AppData.ctx().set().kSmooth);
+        main.showStatisticFull(inputStat);
         main.addGraphView(inputStat);
         main.addToLog("");
         }
@@ -48,8 +45,7 @@ public class FFTAdapter implements FFTCallBack {
     }
     @Override
     public void onMessage(String mes) {
-        if (!main.hideFFTOutput)
-            main.addToLog(mes);
+        main.addToLogHide(mes);
         }
 
 }

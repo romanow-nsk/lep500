@@ -11,11 +11,8 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import com.google.gson.Gson;
-import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.GraphViewSeries;
 import com.jjoe64.graphview.LineGraphView;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import android.provider.OpenableColumns;
@@ -40,12 +37,10 @@ import java.util.ArrayList;
 
 import romanow.snn_simulator.fft.FFT;
 import romanow.snn_simulator.fft.FFTAudioTextFile;
-import romanow.snn_simulator.fft.FFTCallBack;
-import romanow.snn_simulator.fft.FFTParams;
 import romanow.snn_simulator.layer.Extreme;
 import romanow.snn_simulator.layer.LayerStatistic;
 
-public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+public class MainActivity extends GraphBaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
     public YandexDiskService yadisk = new YandexDiskService(this);
     public MailSender mail = new MailSender(this);
@@ -54,19 +49,14 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
     public Thread guiThead;
     private final boolean  p_Compress=false;        // Нет компрессии
     private final int  compressLevel=0;
-    private final int greatTextSize=20;             // Крупный шрифт
     private final float kMultiple=3.0f;
     private final float kAmpl=1f;
-    private final int KF100=FFT.sizeHZ/100;
     private final int MiddleMode=0x01;
     private final int DispMode=0x02;
     private final int MiddleColor = 0x0000FF00;
     private final int DispColor = 0x000000FF;
-    private final int paintColors[]={0x0000FF00,0x000000FF,0x0000FFFF,0x00FF00FF};
-    private int colorNum=0;
     private final int GraphBackColor = 0x00A0C0C0;
     final static String archiveFile="LEP500Archive.json";
-    private LineGraphView multiGraph=null;
     //------------------------------------------------------------------------------------
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
@@ -124,6 +114,7 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            new FFT();                          // статические данные
             guiThead = Thread.currentThread();
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             setContentView(R.layout.activity_main);
@@ -198,9 +189,25 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
     public void addToLog(boolean fullInfoMes, String ss){
         addToLog(fullInfoMes, ss,0);
         }
+    @Override
     public void addToLog(String ss, int textSize){
         addToLog(false,ss,textSize);
         }
+
+    @Override
+    public void addToLogHide(String ss) {
+        if (!hideFFTOutput)
+            addToLog(ss);
+        }
+
+    @Override
+    public void showStatisticFull(LayerStatistic inputStat) {
+        if (fullInfo)
+            showStatistic(inputStat);
+        else
+            showShort(inputStat);
+        }
+
     public void addToLog(boolean fullInfoMes, final String ss, final int textSize){
         if (fullInfoMes && !set.fullInfo)
             return;
@@ -282,32 +289,6 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
         return result;
         }
 
-    public void processInputStream(InputStream is, String title) throws Throwable{
-        FFTAudioTextFile xx = new FFTAudioTextFile();
-        xx.setnPoints(set.nTrendPoints);
-        xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
-        xx.removeTrend(set.nTrendPoints);
-        long lnt = xx.getFrameLength();
-        //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
-        //if (p_BlockSize!=1) p_BlockSize/=2;
-        FFTParams params = new FFTParams().W(set.p_BlockSize*FFT.Size0).procOver(set.p_OverProc).
-                FFTWindowReduce(false).p_Cohleogram(false).p_GPU(false).compressMode(false).
-                winMode(set.winFun);
-        FFT fft = new FFT();
-        fft.setFFTParams(params);
-        fft.calcFFTParams();
-        freqStep = fft.getStepHZLinear()/KF100;
-        if (!hideFFTOutput){
-            addToLog("Отсчетов "+xx.getFrameLength());
-            addToLog("Кадр: "+set.p_BlockSize*FFT.Size0);
-            addToLog("Перекрытие: "+set.p_OverProc);
-            addToLog("Дискретность: "+String.format("%5.4f",freqStep)+" гц");
-            }
-        //inputStat.reset();
-        //fft.fftDirect(xx,back);
-        fft.fftDirect(xx,new FFTAdapter(this,title));
-        }
-
     public Pair<InputStream, FileDescription> openSelected(Intent data) throws FileNotFoundException {
         Uri uri = data.getData();
         String ss = getFileName(uri);
@@ -383,14 +364,10 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
                 }
         }
 
-    public static String createFatalMessage(Throwable ee, int stackSize) {
-        String ss = ee.toString() + "\n";
-        StackTraceElement dd[] = ee.getStackTrace();
-        for (int i = 0; i < dd.length && i < stackSize; i++) {
-            ss += dd[i].getClassName() + "." + dd[i].getMethodName() + ":" + dd[i].getLineNumber() + "\n";
-            }
-        String out = "Программная ошибка:\n" + ss;
-        return out;
+    public void procArchive(FileDescription fd, boolean longClick) {
+        fullInfo = longClick;
+        hideFFTOutput = !longClick;
+        procArchive(fd);
         }
 
     private void showExtrems(LayerStatistic inputStat, boolean mode){
@@ -454,36 +431,10 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
             }
         });
         }
-    //--------------------------------------------------------------------------
-    public void paintOne(LineGraphView graphView,float data[], int color,int noFirst,int noLast,boolean freqMode){
-        GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length-noFirst-noLast];
-        for(int j=noFirst;j<data.length-noLast;j++){                    // Подпись значений факторов j-ой ячейки
-            double freq = freqMode ? (j*50./data.length) : (j/100.);
-            zz[j-noFirst] = new GraphView.GraphViewData(freq,data[j]);
-            }
-        GraphViewSeries series = new GraphViewSeries(zz);
-        series.getStyle().color = color | 0xFF000000;
-        graphView.addSeries(series);
-        }
 
-    public synchronized void addGraphView(LayerStatistic inputStat){
-        paintOne(multiGraph,inputStat.getMids(),paintColors[colorNum],0,0,true);
-        colorNum++;
-        }
-    public void createMultiGraph(){
-        LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(R.layout.graphview, null);
-        LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
-        multiGraph = new LineGraphView(this,"");
-        multiGraph.setScalable(true);
-        multiGraph.setScrollable(true);
-        multiGraph.getGraphViewStyle().setTextSize(15);
-        panel.addView(multiGraph);
-        log.addView(lrr);
-        }
+
+
     //--------------------------------------------------------------------------
-    public final String androidFileDirectory(){
-        return getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
-        }
     public void loadArchive(){
         try {
             Gson gson = new Gson();
@@ -547,9 +498,11 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
             set = (LEP500Settings) gson.fromJson(out, LEP500Settings.class);
             out.close();
             set.createMaps();
+            AppData.ctx().set(set);
         } catch (Exception ee) {
             popupAndLog("Ошибка чтения настроек (сброшены)");
             saveSettings();
+            AppData.ctx().set(set);
             }
     }
     //------------------------------------------------------------------------
@@ -568,16 +521,15 @@ public class MainActivity extends AppCompatActivity {     //!!!!!!!!!!!!!!!!!!!!
             "Список сенсоров",
             "Очистить список",
             "Просмотр волны",
-            "Отправить из архива"
+            "Отправить из архива",
+            "Полный экран"
             };
     public void procMenuItem(int index) {
         switch (index){
 case 0: calcFirstLastPoints();
-        colorNum=0;
         selectMultiFromArchive("Проcмотр архива",procViewMultiSelector);
         break;
 case 1: calcFirstLastPoints();
-        colorNum=0;
         selectMultiFromArchive("Проcмотр архива",procViewMultiSelectorFull);
         break;
 case 2: preloadFromText(CHOOSE_RESULT_COPY);
@@ -624,6 +576,9 @@ case 13:showWaveForm();
         break;
 case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
         break;
+case 15:calcFirstLastPoints();
+        selectMultiFromArchive("Проcмотр архива",procViewSelectorFull);
+        break;
         }
     }
     //----------------------------------------------------------------------------------------------
@@ -644,7 +599,7 @@ case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
         };
     private  I_ArchveMultiSelector deleteMultiSelector = new I_ArchveMultiSelector() {
         @Override
-        public void onSelect(ArrayList<FileDescription> fd, boolean longClick) {
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
             for (FileDescription ff : fd){
                 File file = new File(androidFileDirectory()+"/"+ff.originalFileName);
                 file.delete();
@@ -654,17 +609,26 @@ case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
         };
     private  I_ArchveMultiSelector procViewMultiSelector = new I_ArchveMultiSelector() {
         @Override
-        public void onSelect(ArrayList<FileDescription> fd, boolean longClick) {
-            createMultiGraph();
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
+            log.addView(createMultiGraph(R.layout.graphview));
             for (FileDescription ff : fd){
                 procArchive(ff,false);
                 }
             }
         };
+    private  I_ArchveMultiSelector procViewSelectorFull = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
+            Intent intent = new Intent();
+            intent.setClass(getApplicationContext(),FullScreenGraph.class);
+            AppData.ctx().setFileList(fd);
+            startActivity(intent);
+            }
+        };
     private  I_ArchveMultiSelector procViewMultiSelectorFull = new I_ArchveMultiSelector() {
         @Override
-        public void onSelect(ArrayList<FileDescription> fd, boolean longClick) {
-            createMultiGraph();
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
+            log.addView(createMultiGraph(R.layout.graphview));
             for (FileDescription ff : fd){
                 procArchive(ff,true);
             }
@@ -682,15 +646,8 @@ case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
         };
     private  I_ArchveMultiSelector sendMailSelector = new I_ArchveMultiSelector() {
         @Override
-        public void onSelect(ArrayList<FileDescription> fdlist, boolean longClick) {
+        public void onSelect(FileDescriptionList fdlist, boolean longClick) {
             try {
-                //SendMail sm = new SendMail(MainActivity.this, fd);
-                //sm.execute();
-                //try{
-                //    mail.sendMail(fd);
-                //    } catch (Exception ee){
-                //        addToLog("Ошибка mail: "+ee.toString());
-                //        }
                 final Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
                 emailIntent.setType("plain/text");
                 emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, new String[]{set.mailToSend});
@@ -716,18 +673,7 @@ case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
             }
         };
     //----------------------------------------------------------------------------------------------
-    private void procArchive(FileDescription fd, boolean longClick){
-        String fname = fd.originalFileName;
-        try {
-            fullInfo=longClick;
-            hideFFTOutput=!longClick;
-            FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
-            addToLog(fd.toString(),greatTextSize);
-            processInputStream(fis,fd.toString());
-            } catch (Throwable e) {
-                addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
-                }
-        }
+
     private I_ArchveSelector archiveProcView = new I_ArchveSelector() {
         @Override
         public void onSelect(FileDescription fd, boolean longClick) {
@@ -846,7 +792,7 @@ case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
         new MultiListBoxDialog(this, title, list, new MultiListBoxListener() {
             @Override
             public void onSelect(boolean[] selected) {
-                ArrayList<FileDescription> out = new ArrayList<>() ;
+                FileDescriptionList out = new FileDescriptionList() ;
                 for(int i=0;i<archive.fileList.size();i++)
                     if (selected[i])
                         out.add(archive.fileList.get(i));

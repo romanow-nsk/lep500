@@ -37,7 +37,8 @@ public class SettingsMenu {
                 }
             });
         img.setClickable(true);
-        tt.setInputType(textType ? InputType.TYPE_CLASS_TEXT : InputType.TYPE_CLASS_NUMBER);
+        tt.setInputType(textType ? InputType.TYPE_CLASS_TEXT : (InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL));
+        //tt.setInputType(textType ? InputType.TYPE_CLASS_TEXT : InputType.TYPE_CLASS_NUMBER );
         tt.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
