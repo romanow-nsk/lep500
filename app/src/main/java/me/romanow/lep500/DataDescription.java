@@ -2,6 +2,6 @@ package me.romanow.lep500;
 
 import java.util.ArrayList;
 
-public class DataDesription {
+public class DataDescription {
     ArrayList<FileDescription> fileList=new ArrayList<>();
 }

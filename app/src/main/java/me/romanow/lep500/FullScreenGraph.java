@@ -1,16 +1,13 @@
 package me.romanow.lep500;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 
-import com.google.gson.Gson;
-
 import romanow.snn_simulator.layer.LayerStatistic;
 
-public class FullScreenGraph extends GraphBaseActivity {
+public class FullScreenGraph extends BaseActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

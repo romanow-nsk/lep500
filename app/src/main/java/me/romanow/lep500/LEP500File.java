@@ -75,7 +75,7 @@ public class LEP500File{
             os.write("");
             os.newLine();
             //9 10000
-            os.write("100000");
+            os.write("10000");
             os.newLine();
             //10 канал-1 баланс=128 температура=8C
             os.write("канал-"+sensorName);

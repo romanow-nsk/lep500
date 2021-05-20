@@ -8,8 +8,8 @@ import static me.romanow.lep500.MainActivity.createFatalMessage;
 
 public class FFTAdapter implements FFTCallBack {
     private LayerStatistic inputStat;
-    private GraphBaseActivity main;
-    public FFTAdapter(GraphBaseActivity main0,String title){
+    private BaseActivity main;
+    public FFTAdapter(BaseActivity main0, String title){
         inputStat = new LayerStatistic(title);
         main = main0;
         }

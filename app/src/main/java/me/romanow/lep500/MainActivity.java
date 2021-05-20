@@ -26,6 +26,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -40,7 +41,7 @@ import romanow.snn_simulator.fft.FFTAudioTextFile;
 import romanow.snn_simulator.layer.Extreme;
 import romanow.snn_simulator.layer.LayerStatistic;
 
-public class MainActivity extends GraphBaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
     public YandexDiskService yadisk = new YandexDiskService(this);
     public MailSender mail = new MailSender(this);
@@ -63,7 +64,6 @@ public class MainActivity extends GraphBaseActivity {     //!!!!!!!!!!!!!!!!!!!!
     private int noLastPoints=1000;
     public  boolean fullInfo=false;         // Вывод полной информации о спектре
     public boolean hideFFTOutput=false;
-    private DataDesription archive = new DataDesription();
     private double freqStep = 0;
     private int waveMas=1;
     private double waveStartTime=0;
@@ -435,7 +435,7 @@ public class MainActivity extends GraphBaseActivity {     //!!!!!!!!!!!!!!!!!!!!
 
 
     //--------------------------------------------------------------------------
-    public void loadArchive(){
+    public DataDescription loadArchive(){
         try {
             Gson gson = new Gson();
             File ff = new File(androidFileDirectory());
@@ -444,16 +444,19 @@ public class MainActivity extends GraphBaseActivity {     //!!!!!!!!!!!!!!!!!!!!
                 }
             String ss = androidFileDirectory()+"/"+archiveFile;
             InputStreamReader out = new InputStreamReader(new FileInputStream(ss), "UTF-8");
-            archive = (DataDesription) gson.fromJson(out, DataDesription.class);
+            DataDescription archive = (DataDescription) gson.fromJson(out, DataDescription.class);
             out.close();
+            return archive;
             } catch (Exception ee) {
                 addToLog("Ошибка чтения архива "+ee.toString());
                 addToLog("Создан пустой");
                 popupInfo("Ошибка чтения архива,создан пустой");
-                saveArchive();
+            DataDescription archive2 = new DataDescription();
+                saveArchive(archive2);
+                return archive2;
                 }
             }
-    public void saveArchive() {
+    public void saveArchive(DataDescription archive) {
         try {
             Gson gson = new Gson();
             File ff = new File(androidFileDirectory());
@@ -522,7 +525,9 @@ public class MainActivity extends GraphBaseActivity {     //!!!!!!!!!!!!!!!!!!!!
             "Очистить список",
             "Просмотр волны",
             "Отправить из архива",
-            "Полный экран"
+            "Полный экран",
+            "Группировать",
+            "Разгруппировать"
             };
     public void procMenuItem(int index) {
         switch (index){
@@ -579,9 +584,40 @@ case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
 case 15:calcFirstLastPoints();
         selectMultiFromArchive("Проcмотр архива",procViewSelectorFull);
         break;
+case 16:selectMultiFromArchive("Группировать",toGroupSelector);
+        break;
+case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSelector);
+        break;
         }
     }
     //----------------------------------------------------------------------------------------------
+    private  I_ArchveMultiSelector toGroupSelector = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
+            for (FileDescription ff : fd){
+                File file = new File(androidFileDirectory()+"/"+ff.originalFileName);
+                file.delete();
+                }
+            }
+        };
+    private  I_ArchveMultiSelector fromGroupSelector = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
+            for (FileDescription ff : fd){
+                ArrayList<FileDescription> dirList = createArchive(ff.originalFileName);
+                for (FileDescription ff2 : dirList){
+                    try {
+                        moveFile(androidFileDirectory()+"/"+ff.originalFileName+"/"+ff2.originalFileName,
+                            androidFileDirectory()+"/"+ff2.originalFileName);
+                        }catch (Exception ee){ addToLog(createFatalMessage(ee,5)); }
+                    }
+                try {
+                    File gg = new File(androidFileDirectory()+"/"+ff.originalFileName);
+                    gg.delete();
+                    }catch (Exception ee){ addToLog(createFatalMessage(ee,5)); }
+                }
+            }
+        };
     private  I_ArchveSelector uploadSelector = new I_ArchveSelector() {
         @Override
         public void onSelect(FileDescription fd, boolean longClick) {
@@ -594,7 +630,6 @@ case 15:calcFirstLastPoints();
         public void onSelect(FileDescription fd, boolean longClick) {
             File file = new File(androidFileDirectory()+"/"+fd.originalFileName);
             file.delete();
-            createArchive();
             }
         };
     private  I_ArchveMultiSelector deleteMultiSelector = new I_ArchveMultiSelector() {
@@ -604,7 +639,6 @@ case 15:calcFirstLastPoints();
                 File file = new File(androidFileDirectory()+"/"+ff.originalFileName);
                 file.delete();
                 }
-            createArchive();
             }
         };
     private  I_ArchveMultiSelector procViewMultiSelector = new I_ArchveMultiSelector() {
@@ -672,8 +706,6 @@ case 15:calcFirstLastPoints();
                     }
             }
         };
-    //----------------------------------------------------------------------------------------------
-
     private I_ArchveSelector archiveProcView = new I_ArchveSelector() {
         @Override
         public void onSelect(FileDescription fd, boolean longClick) {
@@ -684,8 +716,24 @@ case 15:calcFirstLastPoints();
         @Override
         public void onSelect(FileDescription fd, boolean longClick) {
             procArchive(fd,true);
-        }
+            }
     };
+    //----------------------------------------------------------------------------------------------
+    public void moveFile(String src, String dst) throws Exception {
+        String fname1 = androidFileDirectory()+"/"+src;
+        BufferedReader fd1 = new BufferedReader(new InputStreamReader(new FileInputStream(fname1),"Windows-1251"));
+        BufferedWriter fd2 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(androidFileDirectory()+"/"+dst),"Windows-1251"));
+        String ss;
+        while ((ss=fd1.readLine())!=null){
+            fd2.write(ss);
+            fd2.newLine();
+            }
+        fd2.flush();
+        fd1.close();
+        fd2.close();
+        File file = new File(fname1);
+        file.delete();
+        }
     //----------------------------------------------------------------------------------------------
     View.OnClickListener waveStartEvent = new View.OnClickListener() {
         @Override
@@ -752,8 +800,7 @@ case 15:calcFirstLastPoints();
         addToLog("");
         }
 
-    public  void procWaveForm(int index){
-        FileDescription fd = archive.fileList.get(index);
+    public  void procWaveForm(FileDescription fd){
         String fname = fd.originalFileName;
         try {
             FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
@@ -769,46 +816,49 @@ case 15:calcFirstLastPoints();
         }
 
     public void selectFromArchive(String title, final I_ArchveSelector selector){
-        createArchive();
+        final ArrayList<FileDescription> ss = createArchive();
         ArrayList<String> out = new ArrayList<>();
-        for(FileDescription ff : archive.fileList)
+        for(FileDescription ff : ss)
             out.add(ff.toString());
         new ListBoxDialog(this, out, title, new ListBoxListener() {
             @Override
             public void onSelect(int index) {
-                selector.onSelect(archive.fileList.get(index),false);
+                selector.onSelect(ss.get(index),false);
                 }
             @Override
             public void onLongSelect(int index) {
-                selector.onSelect(archive.fileList.get(index),true);
+                selector.onSelect(ss.get(index),true);
                 }
             }).create();
         }
     public void selectMultiFromArchive(String title, final I_ArchveMultiSelector selector){
-        createArchive();
+        selectMultiFromArchive(false,title,selector);
+        }
+    public void selectMultiFromArchive(boolean dirList, String title, final I_ArchveMultiSelector selector){
+        final ArrayList<FileDescription> ss = dirList ? createDirArchive() : createArchive();
         final ArrayList<String> list = new ArrayList<>();
-        for(FileDescription ff : archive.fileList)
-            list.add(ff.toString());
+        for(FileDescription ff : ss)
+            list.add(dirList ? ff.originalFileName : ff.toString());
         new MultiListBoxDialog(this, title, list, new MultiListBoxListener() {
             @Override
             public void onSelect(boolean[] selected) {
                 FileDescriptionList out = new FileDescriptionList() ;
-                for(int i=0;i<archive.fileList.size();i++)
+                for(int i=0;i<ss.size();i++)
                     if (selected[i])
-                        out.add(archive.fileList.get(i));
+                        out.add(ss.get(i));
                     selector.onSelect(out,false);
                 }
             });
     }
     public void showWaveForm(){
-        createArchive();
+        final ArrayList<FileDescription> ss = createArchive();
         ArrayList<String> out = new ArrayList<>();
-        for(FileDescription ff : archive.fileList)
+        for(FileDescription ff : ss)
             out.add(ff.toString());
         new ListBoxDialog(this, out, "Просмотр волны", new ListBoxListener() {
             @Override
             public void onSelect(int index) {
-                procWaveForm(index);
+                procWaveForm(ss.get(index));
                 }
             @Override
             public void onLongSelect(int index) {}
@@ -848,13 +898,19 @@ case 15:calcFirstLastPoints();
             };
         addToLogButton(ff.toString(),listener,listenerLong);
         }
-    public void createArchive(){
-        File ff = new File(androidFileDirectory());
+    public ArrayList<FileDescription>createArchive(){
+        return createArchive(null);
+        }
+    public ArrayList<FileDescription> createArchive(String subdir){
+        File ff = new File(androidFileDirectory()+(subdir!=null ? "/"+subdir : ""));
         if (!ff.exists()) {
             ff.mkdir();
             }
-        archive.fileList.clear();
+        ArrayList<FileDescription> out = new ArrayList<>();
         for(String ss : ff.list()){
+            File file = new File(androidFileDirectory()+"/"+ss);
+            if (file.isDirectory())
+                continue;
             FileDescription dd = new FileDescription(ss);
             if (!dd.originalFileName.toUpperCase().endsWith(".TXT"))
                 continue;
@@ -862,9 +918,23 @@ case 15:calcFirstLastPoints();
             if (zz!=null)
                 addToLog("Файл: "+ss+" "+zz);
             else
-                archive.fileList.add(dd);
+                out.add(dd);
+            }
+        return out;
         }
-    }
+    public ArrayList<FileDescription> createDirArchive(){
+        File ff = new File(androidFileDirectory());
+        if (!ff.exists()) {
+            ff.mkdir();
+            }
+        ArrayList<FileDescription> out = new ArrayList<>();
+        for(String ss : ff.list()){
+            File file = new File(androidFileDirectory()+"/"+ss);
+            if (file.isDirectory())
+                out.add(new FileDescription(ss));
+            }
+        return out;
+        }
     //----------------------------------------------------------------------------------------------
     // Создаем BroadcastReceiver для ACTION_FOUND
     private final BroadcastReceiver blueToothReceiver=new BroadcastReceiver(){

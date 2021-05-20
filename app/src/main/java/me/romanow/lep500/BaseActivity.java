@@ -18,7 +18,7 @@ import romanow.snn_simulator.fft.FFTAudioTextFile;
 import romanow.snn_simulator.fft.FFTParams;
 import romanow.snn_simulator.layer.LayerStatistic;
 
-public abstract class GraphBaseActivity extends AppCompatActivity {
+public abstract class BaseActivity extends AppCompatActivity {
     private LineGraphView multiGraph=null;
     public final static int greatTextSize=20;             // Крупный шрифт
     public final static int KF100=FFT.sizeHZ/100;
