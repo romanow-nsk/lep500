@@ -1,5 +1,6 @@
 package me.romanow.lep500;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -8,11 +9,13 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.google.gson.Gson;
 import com.jjoe64.graphview.LineGraphView;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 
 import android.provider.OpenableColumns;
@@ -35,6 +38,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 import romanow.snn_simulator.fft.FFT;
 import romanow.snn_simulator.fft.FFTAudioTextFile;
@@ -995,6 +999,12 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             else
                 out.add(dd);
             }
+        out.sort(new Comparator<FileDescription>() {
+            @Override
+            public int compare(FileDescription o1, FileDescription o2) {
+                return (int)(o2.createDate.getMillis() - o1.createDate.getMillis());
+            }
+        });
         return out;
         }
     public ArrayList<FileDescription> createDirArchive(){
