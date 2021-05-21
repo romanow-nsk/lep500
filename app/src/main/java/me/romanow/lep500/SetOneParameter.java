@@ -2,6 +2,7 @@ package me.romanow.lep500;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -84,6 +85,7 @@ public class SetOneParameter {
         xx.setPadding(5, 5, 5, 5);
         final EditText tt=(EditText) xx.findViewById(R.id.dialog_settings_value);
         tt.setText(""+value);
+        tt.setInputType(InputType.TYPE_CLASS_TEXT);
         TextView img=(TextView)xx.findViewById(R.id.dialog_settings_name);
         img.setText(name);
         img.setOnClickListener(new View.OnClickListener() {
