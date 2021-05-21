@@ -8,6 +8,6 @@ package me.romanow.lep500;
  *
  * @author user
  */
-public interface ListBoxListener {
+public interface I_ListBoxListener {
     public void onSelect(int index);
     public void onLongSelect(int index);  }

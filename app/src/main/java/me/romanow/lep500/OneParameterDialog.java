@@ -11,19 +11,15 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-
-import romanow.snn_simulator.fft.FFT;
-
 public class OneParameterDialog {
     private AlertDialog myDlg=null;
     private boolean wasChanged=false;
     private Activity base;
 
-    private LinearLayout createItem(String name, String value,final EventListener lsn){
+    private LinearLayout createItem(String name, String value,final I_EventListener lsn){
         return createItem(name,value,false,false,lsn);
         }
-    private LinearLayout createItem(String name, String value, boolean shortSize,boolean textType,final EventListener lsn){
+    private LinearLayout createItem(String name, String value, boolean shortSize,boolean textType,final I_EventListener lsn){
         LinearLayout xx=(LinearLayout)base.getLayoutInflater().inflate(
                 shortSize ? R.layout.settings_item_short : R.layout.settings_item, null);
         xx.setPadding(5, 5, 5, 5);
@@ -51,7 +47,7 @@ public class OneParameterDialog {
         return xx;
         }
 
-    public OneParameterDialog(Activity base0, String title, String parName, String parValue, boolean shortSize, boolean textType,final  EventListener listener){
+    public OneParameterDialog(Activity base0, String title, String parName, String parValue, boolean shortSize, boolean textType,final I_EventListener listener){
         base = base0;
         try {
             myDlg=new AlertDialog.Builder(base).create();
@@ -71,7 +67,7 @@ public class OneParameterDialog {
                     myDlg.cancel();
                     }
                 });
-            LinearLayout layout = createItem(parName, parValue, shortSize,textType,new EventListener(){
+            LinearLayout layout = createItem(parName, parValue, shortSize,textType,new I_EventListener(){
                 @Override
                 public void onEvent(String ss) {
                     listener.onEvent(ss);

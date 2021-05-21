@@ -61,7 +61,7 @@ public class BTViewFace {
                 public void onClick(View v) {
                     if (idx>=SensorMaxNumber)
                         return;
-                    new ListBoxDialog(face, MenuItems, getSensorName(sensorList.get(idx)), new ListBoxListener() {
+                    new ListBoxDialog(face, MenuItems, getSensorName(sensorList.get(idx)), new I_ListBoxListener() {
                         @Override
                         public void onSelect(int index) {
                             procMenuItem(sensorList.get(idx),index);
@@ -246,7 +246,7 @@ public class BTViewFace {
         ArrayList<String> sensorNames = new ArrayList<>();
         for(BTReceiver receiver : sensorList)
             sensorNames.add(getSensorName(receiver));
-        new ListBoxDialog(face, sensorNames, "Датчик", new ListBoxListener() {
+        new ListBoxDialog(face, sensorNames, "Датчик", new I_ListBoxListener() {
             @Override
             public void onSelect(int index) {
                 listener.onSensor(sensorList.get(index));
@@ -374,7 +374,7 @@ public class BTViewFace {
             break;
     case 2:
             final BTDescriptor descriptor = face.set.addressMap.get(receiver.getSensorMAC());
-            new OneParameterDialog(face, "Имя датчика",receiver.getSensorMAC(),descriptor==null ? "" : descriptor.btName, false, true,new EventListener() {
+            new OneParameterDialog(face, "Имя датчика",receiver.getSensorMAC(),descriptor==null ? "" : descriptor.btName, false, true,new I_EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     if (descriptor!=null)

@@ -21,18 +21,18 @@ public class ListBoxDialog {
     private String title;
     private ArrayList<String> list;
     private boolean autoClose=true;
-    private ListBoxListener ls=null;
+    private I_ListBoxListener ls=null;
     private int nLines=1;
     private float textSize=0;
     private int textAlignment=View.TEXT_ALIGNMENT_CENTER;
     AlertDialog myDlg=null;
-    public ListBoxDialog(Activity activity0,ArrayList<String> list0,String title0,ListBoxListener ls0){
+    public ListBoxDialog(Activity activity0, ArrayList<String> list0, String title0, I_ListBoxListener ls0){
         activity = activity0;
         title = title0;
         list = list0;
         ls = ls0;
         }
-    public ListBoxDialog(Activity activity0,String list0[],String title0,ListBoxListener ls0){
+    public ListBoxDialog(Activity activity0, String list0[], String title0, I_ListBoxListener ls0){
         activity = activity0;
         title = title0;
         list = new ArrayList<>();
@@ -44,7 +44,7 @@ public class ListBoxDialog {
         this.autoClose = autoClose;
         return this;
         }
-    public ListBoxDialog setListener(ListBoxListener ls) {
+    public ListBoxDialog setListener(I_ListBoxListener ls) {
         this.ls = ls;
         return this;
         }

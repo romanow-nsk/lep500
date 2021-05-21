@@ -4,9 +4,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -43,7 +41,7 @@ public class LEP500File{
             v0++;
             }
         }
-    public void save(String path,EventListener back){
+    public void save(String path, I_EventListener back){
         FileOutputStream out=null;
         try {
             String fspec = path+"/"+createOriginalFileName();

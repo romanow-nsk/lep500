@@ -102,7 +102,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 GPSState.setImageResource(R.drawable.gps);
             }
         });
-    private EventListener logEvent = new EventListener() {
+    private I_EventListener logEvent = new I_EventListener() {
         @Override
         public void onEvent(String ss) {
             addToLog(ss);
@@ -115,6 +115,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         super.onCreate(savedInstanceState);
         try {
             new FFT();                          // статические данные
+            createMenuList();
             guiThead = Thread.currentThread();
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             setContentView(R.layout.activity_main);
@@ -132,7 +133,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         MenuButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new ListBoxDialog(MainActivity.this, MenuItems, "Меню", new ListBoxListener() {
+                new ListBoxDialog(MainActivity.this, createMenuTitles(), "Меню", new I_ListBoxListener() {
                     @Override
                     public void onSelect(int index) {
                         procMenuItem(index);
@@ -509,100 +510,169 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             }
     }
     //------------------------------------------------------------------------
-    private String[] MenuItems = {
-            "Архив",
-            "Архив подробно",
-            "Файл в архив",
-            "Файл кратко",
-            "Файл подробно",
-            "Удалить из архива",
-            "Очистить ленту",
-            "Настройки",
-            "Измерение",
-            "Образец",
-            "Конвертировать в wave",
-            "Список сенсоров",
-            "Очистить список",
-            "Просмотр волны",
-            "Отправить из архива",
-            "Полный экран",
-            "Группировать",
-            "Разгруппировать"
-            };
+    private ArrayList<MenuItemAction> menuList = new ArrayList<>();
+    private String[] createMenuTitles(){
+        String out[] = new String[menuList.size()];
+        for(int i=0;i<out.length;i++)
+            out[i]=menuList.get(i).title;
+        return out;
+        }
     public void procMenuItem(int index) {
-        switch (index){
-case 0: calcFirstLastPoints();
-        selectMultiFromArchive("Проcмотр архива",procViewMultiSelector);
-        break;
-case 1: calcFirstLastPoints();
-        selectMultiFromArchive("Проcмотр архива",procViewMultiSelectorFull);
-        break;
-case 2: preloadFromText(CHOOSE_RESULT_COPY);
-        break;
-case 3: fullInfo=false;
-        hideFFTOutput=true;
-        preloadFromText(CHOOSE_RESULT);
-        break;
-case 4: fullInfo=true;
-        hideFFTOutput=false;
-        preloadFromText(CHOOSE_RESULT);
-        break;
-case 5: selectMultiFromArchive("Удалить из архива",deleteMultiSelector);
-        break;
-case 6: log.removeAllViews();
-        break;
-case 7: new SettingsMenu(this);
-        break;
-case 8: btViewFace.selectSensorGroup(new SensorGroupListener() {
+        menuList.get(index).onSelect();
+        }
+    public void createMenuList(){
+        menuList.add(new MenuItemAction("Архив") {
             @Override
-            public void onSensor(ArrayList<BTReceiver> receiverList) {
-                for(BTReceiver receiver :  receiverList){
-                    String name = btViewFace.getSensorName(receiver).replace("_","-");
-                    LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
-                    receiver.startMeasure(file,false);
-                    }
+            public void onSelect() {
+                calcFirstLastPoints();
+                selectMultiFromArchive("Проcмотр архива",procViewMultiSelector);
                 }
             });
-        break;
-case 9: LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
-        BTReceiver receiver = new BTReceiver(btViewFace,btViewFace.BTBack);
-        receiver.startMeasure(file2,true);
-        break;
-case 10:selectFromArchive("Конвертировать в wave",convertSelector);
-        break;
-case 11:for(BTDescriptor descriptor : set.knownSensors)
-            addToLog("Датчик: "+descriptor.btName+": "+descriptor.btMAC);
-        break;
-case 12:set.knownSensors.clear();
-        set.createMaps();
-        saveSettings();
-        break;
-case 13:showWaveForm();
-        break;
-case 14:selectMultiFromArchive("Отправить Mail",sendMailSelector);
-        break;
-case 15:calcFirstLastPoints();
-        selectMultiFromArchive("Проcмотр архива",procViewSelectorFull);
-        break;
-case 16:selectMultiFromArchive("Группировать",toGroupSelector);
-        break;
-case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSelector);
-        break;
+        menuList.add(new MenuItemAction("Архив подробно") {
+            @Override
+            public void onSelect() {
+                calcFirstLastPoints();
+                selectMultiFromArchive("Проcмотр архива",procViewMultiSelectorFull);
+                }
+            });
+        menuList.add(new MenuItemAction("Полный экран") {
+            @Override
+            public void onSelect() {
+                calcFirstLastPoints();
+                selectMultiFromArchive("Полный экран",procViewSelectorFull);
+                }
+            });
+        menuList.add(new MenuItemAction("Группировать") {
+            @Override
+            public void onSelect() {
+                selectMultiFromArchive("Группировать",toGroupSelector);
+                }
+            });
+        menuList.add(new MenuItemAction("Разгруппировать") {
+            @Override
+            public void onSelect() {
+                selectMultiFromArchive(true,"Разгруппировать",fromGroupSelector);
+                }
+            });
+        menuList.add(new MenuItemAction("Очистить ленту") {
+            @Override
+            public void onSelect() {
+                log.removeAllViews();
+                }
+            });
+        menuList.add(new MenuItemAction("Удалить из архива") {
+            @Override
+            public void onSelect() {
+                selectMultiFromArchive("Удалить из архива",deleteMultiSelector);
+                }
+            });
+        menuList.add(new MenuItemAction("Измерение") {
+            @Override
+            public void onSelect() {
+                btViewFace.selectSensorGroup(new SensorGroupListener() {
+                    @Override
+                    public void onSensor(ArrayList<BTReceiver> receiverList) {
+                        for(BTReceiver receiver :  receiverList){
+                            String name = btViewFace.getSensorName(receiver).replace("_","-");
+                            LEP500File file = new LEP500File(set,name,gpsService.lastGPS());
+                            receiver.startMeasure(file,false);
+                            }
+                        }
+                    });
+                }
+            });
+        menuList.add(new MenuItemAction("Настройки") {
+            @Override
+            public void onSelect() {
+                new SettingsMenu(MainActivity.this);
+                }
+            });
+        menuList.add(new MenuItemAction("Список сенсоров") {
+            @Override
+            public void onSelect() {
+                for(BTDescriptor descriptor : set.knownSensors)
+                    addToLog("Датчик: "+descriptor.btName+": "+descriptor.btMAC);
+                }
+            });
+        menuList.add(new MenuItemAction("Очистить список") {
+            @Override
+            public void onSelect() {
+                set.knownSensors.clear();
+                set.createMaps();
+                saveSettings();
+                }
+            });
+        menuList.add(new MenuItemAction("Отправить в mail") {
+            @Override
+            public void onSelect() {
+                selectMultiFromArchive("Отправить Mail",sendMailSelector);
+                }
+            });
+        menuList.add(new MenuItemAction("Просмотр волны") {
+            @Override
+            public void onSelect() {
+                showWaveForm();
+                }
+            });
+        menuList.add(new MenuItemAction("Конвертировать в wave") {
+            @Override
+            public void onSelect() {
+                selectFromArchive("Конвертировать в wave",convertSelector);
+                }
+            });
+        menuList.add(new MenuItemAction("Файл в архив") {
+            @Override
+            public void onSelect() {
+                preloadFromText(CHOOSE_RESULT_COPY);
+                }
+            });
+        menuList.add(new MenuItemAction("Файл кратко") {
+            @Override
+            public void onSelect() {
+                fullInfo=false;
+                hideFFTOutput=true;
+                preloadFromText(CHOOSE_RESULT);
+                }
+            });
+        menuList.add(new MenuItemAction("Файл подробно") {
+            @Override
+            public void onSelect() {
+                fullInfo=true;
+                hideFFTOutput=false;
+                preloadFromText(CHOOSE_RESULT);
+                }
+            });
+        menuList.add(new MenuItemAction("Образец") {
+            @Override
+            public void onSelect() {
+                LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
+                BTReceiver receiver = new BTReceiver(btViewFace,btViewFace.BTBack);
+                receiver.startMeasure(file2,true);
+                }
+            });
         }
-    }
     //----------------------------------------------------------------------------------------------
     private  I_ArchveMultiSelector toGroupSelector = new I_ArchveMultiSelector() {
         @Override
-        public void onSelect(FileDescriptionList fd, boolean longClick) {
-            String subdir="xxx";
-            File dd = new File(androidFileDirectory()+"/"+subdir);
-            dd.mkdir();
-            for (FileDescription ff : fd){
-                try {
-                    String src = androidFileDirectory()+"/"+ff.originalFileName;
-                    moveFile(src, androidFileDirectory()+"/"+subdir+"/"+ff.originalFileName);
-                    }catch (Exception ee){ addToLog(createFatalMessage(ee,5)); }
+        public void onSelect(final FileDescriptionList fd, boolean longClick) {
+            new SetOneParameter(MainActivity.this,"Группа","",true, new I_EventListener() {
+                @Override
+                public void onEvent(String subdir) {
+                    File dd = new File(androidFileDirectory()+"/"+subdir);
+                    if (dd.exists()){
+                        popupAndLog(subdir+" уже существует");
+                        return;
+                        }
+                    dd.mkdir();
+                    for (FileDescription ff : fd){
+                        try {
+                            String src = androidFileDirectory()+"/"+ff.originalFileName;
+                            moveFile(src, androidFileDirectory()+"/"+subdir+"/"+ff.originalFileName);
+                            }catch (Exception ee){ addToLog(createFatalMessage(ee,5)); }
+                        }
+                    popupAndLog("Сгруппировано в "+subdir);
                 }
+            });
             }
         };
     private  I_ArchveMultiSelector fromGroupSelector = new I_ArchveMultiSelector() {
@@ -620,6 +690,7 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
                     File gg = new File(androidFileDirectory()+"/"+ff.originalFileName);
                     gg.delete();
                     }catch (Exception ee){ addToLog(createFatalMessage(ee,5)); }
+                popupAndLog("Разгруппировано");
                 }
             }
         };
@@ -742,7 +813,7 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
     View.OnClickListener waveStartEvent = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            new OneParameterDialog(MainActivity.this, "Параметр графика", "Начало (сек)", "" + waveStartTime, false, false,new EventListener() {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Начало (сек)", "" + waveStartTime, false, false,new I_EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     try {
@@ -764,7 +835,7 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
     View.OnClickListener waveMasEvent = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            new OneParameterDialog(MainActivity.this, "Параметр графика", "Масштаб", "" + waveMas, false, false,new EventListener() {
+            new OneParameterDialog(MainActivity.this, "Параметр графика", "Масштаб", "" + waveMas, false, false,new I_EventListener() {
                 @Override
                 public void onEvent(String ss) {
                     try {
@@ -824,7 +895,7 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
         ArrayList<String> out = new ArrayList<>();
         for(FileDescription ff : ss)
             out.add(ff.toString());
-        new ListBoxDialog(this, out, title, new ListBoxListener() {
+        new ListBoxDialog(this, out, title, new I_ListBoxListener() {
             @Override
             public void onSelect(int index) {
                 selector.onSelect(ss.get(index),false);
@@ -859,7 +930,7 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
         ArrayList<String> out = new ArrayList<>();
         for(FileDescription ff : ss)
             out.add(ff.toString());
-        new ListBoxDialog(this, out, "Просмотр волны", new ListBoxListener() {
+        new ListBoxDialog(this, out, "Просмотр волны", new I_ListBoxListener() {
             @Override
             public void onSelect(int index) {
                 procWaveForm(ss.get(index));
@@ -965,7 +1036,7 @@ case 17:selectMultiFromArchive(true,"Разгруппировать",fromGroupSe
             popupAndLog("Датчик с именем: "+btViewFace.getSensorName(receiver));
             return;
             }
-        new OneParameterDialog(this, "Имя датчика",receiver.getSensorMAC(),"", false, true,new EventListener() {
+        new OneParameterDialog(this, "Имя датчика",receiver.getSensorMAC(),"", false, true,new I_EventListener() {
             @Override
             public void onEvent(String ss) {
                 if (set.nameMap.get(ss)!=null){
