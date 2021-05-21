@@ -22,8 +22,9 @@ public abstract class BaseActivity extends AppCompatActivity {
     private LineGraphView multiGraph=null;
     public final static int greatTextSize=20;             // Крупный шрифт
     public final static int KF100=FFT.sizeHZ/100;
-    private final int paintColors[]={0x0000FF00,0x000000FF,0x0000FFFF,0x00FF00FF};
-    private int colorNum=0;
+    public final static int paintColors[]={0x0000A000,0x000000FF,0x0000A0A0,0x00C000C0};
+    protected int colorNum=0;
+    protected double freqStep=0;
     public abstract void addToLog(String ss, int textSize);
     public abstract void addToLogHide(String ss);
     public abstract void popupAndLog(String ss);
@@ -97,7 +98,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         FFT fft = new FFT();
         fft.setFFTParams(params);
         fft.calcFFTParams();
-        double freqStep = fft.getStepHZLinear()/KF100;
+        freqStep = fft.getStepHZLinear()/KF100;
         addToLogHide("Отсчетов "+xx.getFrameLength());
         addToLogHide("Кадр: "+set.p_BlockSize*FFT.Size0);
         addToLogHide("Перекрытие: "+set.p_OverProc);

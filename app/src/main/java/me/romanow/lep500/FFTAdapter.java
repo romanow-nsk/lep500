@@ -24,7 +24,7 @@ public class FFTAdapter implements FFTCallBack {
         inputStat.smooth(AppData.ctx().set().kSmooth);
         main.showStatisticFull(inputStat);
         main.addGraphView(inputStat);
-        main.addToLog("");
+        //main.addToLog("");
         }
     @Override
     public boolean onStep(int nBlock, int calcMS, float totalMS, FFT fft) {

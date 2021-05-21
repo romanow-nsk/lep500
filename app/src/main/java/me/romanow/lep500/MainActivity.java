@@ -68,7 +68,6 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private int noLastPoints=1000;
     public  boolean fullInfo=false;         // Вывод полной информации о спектре
     public boolean hideFFTOutput=false;
-    private double freqStep = 0;
     private int waveMas=1;
     private double waveStartTime=0;
     //----------------------------------------------------------------------------
@@ -214,6 +213,9 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         }
 
     public void addToLog(boolean fullInfoMes, final String ss, final int textSize){
+        addToLog(fullInfoMes,ss,textSize,0);
+        }
+    public void addToLog(boolean fullInfoMes, final String ss, final int textSize, final int textColor){
         if (fullInfoMes && !set.fullInfo)
             return;
         guiCall(new Runnable() {
@@ -221,12 +223,13 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             public void run() {
                 TextView txt = new TextView(MainActivity.this);
                 txt.setText(ss);
+                txt.setTextColor(textColor | 0xFF000000);
                 if (textSize!=0)
                     txt.setTextSize(textSize);
                 log.addView(txt);
                 scrollDown();
-            }
-        });
+                }
+            });
         }
     public void addToLog(final String ss, final  int textSize, final View.OnClickListener listener){
         guiCall(new Runnable() {
@@ -383,6 +386,8 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             addToLog("Экстремумов не найдено");
             return;
             }
+        if (mode)
+            addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,paintColors[colorNum]);
         int count = nFirstMax < list.size() ? nFirstMax : list.size();
         Extreme extreme = list.get(0);
         double val0 = mode ? extreme.value : extreme.diff;
@@ -408,7 +413,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             addToLog("Экстремумов не найдено",greatTextSize);
             return;
             }
-        addToLog(String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize);
+        addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,paintColors[colorNum]);
         }
 
     //--------------------------------------------------------------------------------------------------------
