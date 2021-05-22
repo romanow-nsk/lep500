@@ -59,12 +59,12 @@ public class BTViewFace {
             BTState[i].setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (idx>=SensorMaxNumber)
+                    if (idx>=SensorMaxNumber || idx>=sensorList.size())
                         return;
                     new ListBoxDialog(face, MenuItems, getSensorName(sensorList.get(idx)), new I_ListBoxListener() {
                         @Override
                         public void onSelect(int index) {
-                            procMenuItem(sensorList.get(idx),index);
+                            procMenuItem(sensorList.get(idx),idx,index);
                             }
                         @Override
                         public void onLongSelect(int index) {}
@@ -360,9 +360,14 @@ public class BTViewFace {
         "Уровень заряда",
         "Прервать"
         };
-
-    public void procMenuItem(final BTReceiver receiver, final int index) {
-        switch (index) {
+    public void offAll(){
+        for(BTReceiver receiver : sensorList){
+            receiver.deviceOff();
+            receiver.blueToothOff();
+            }
+        }
+    public void procMenuItem(final BTReceiver receiver, final int recIdx, final int menuIdx) {
+        switch (menuIdx) {
     case 0:
             receiver.deviceOff();
             receiver.blueToothOff();
@@ -383,7 +388,7 @@ public class BTViewFace {
                         face.set.knownSensors.add(new BTDescriptor(ss,receiver.getSensorMAC()));
                     face.set.createMaps();
                     face.saveSettings();
-                    BTStateText[index].setText(getSensorName(receiver));
+                    BTStateText[recIdx].setText(getSensorName(receiver));
                     }
                 });
             break;

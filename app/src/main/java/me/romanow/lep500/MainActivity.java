@@ -1,6 +1,7 @@
 package me.romanow.lep500;
 
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -117,6 +118,11 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (!mBluetoothAdapter.isEnabled()){
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivity(enableBtIntent);
+                }
             new FFT();                          // статические данные
             createMenuList();
             guiThead = Thread.currentThread();
@@ -517,7 +523,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             saveSettings();
             AppData.ctx().set(set);
             }
-    }
+        }
     //------------------------------------------------------------------------
     private ArrayList<MenuItemAction> menuList = new ArrayList<>();
     private String[] createMenuTitles(){
@@ -594,6 +600,22 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             @Override
             public void onSelect() {
                 new SettingsMenu(MainActivity.this);
+                }
+            });
+        menuList.add(new MenuItemAction("Выключить все") {
+            @Override
+            public void onSelect() {
+                btViewFace.offAll();
+                }
+            });
+        menuList.add(new MenuItemAction("Сброс BlueTooth") {
+            @Override
+            public void onSelect() {
+                BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                if (mBluetoothAdapter.isEnabled())
+                    mBluetoothAdapter.disable();
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivity(enableBtIntent);
                 }
             });
         menuList.add(new MenuItemAction("Список сенсоров") {
