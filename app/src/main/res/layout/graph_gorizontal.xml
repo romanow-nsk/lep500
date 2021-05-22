@@ -1,24 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!---androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
-
-    </com.google.android.material.appbar.AppBarLayout!-->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -28,9 +8,19 @@
     android:background="@color/White"
     >
     <LinearLayout
+        android:id="@+id/viewPanelHead"
+        android:layout_width="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_height="25dp"
+        android:background="@color/colorPrimaryDark"
+        android:orientation="horizontal">
+
+    </LinearLayout>
+    <LinearLayout
         android:id="@+id/viewPanelHoriz"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/viewPanelHead"
         android:orientation="horizontal"
         />
 </RelativeLayout>

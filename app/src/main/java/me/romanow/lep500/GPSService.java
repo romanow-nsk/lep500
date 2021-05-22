@@ -12,12 +12,13 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 
+import androidx.core.app.ActivityCompat;
+
 import org.joda.time.DateTime;
 
 import java.util.Iterator;
 
 import static androidx.core.content.ContextCompat.checkSelfPermission;
-import static romanow.snn_simulator.UniExcept.settings;
 
 public class GPSService {
     public final static int GPSInterval = 10;                 // Интервал опроса GPS-координат (сек)
@@ -52,12 +53,13 @@ public class GPSService {
             back.onEvent("Недоступен менеджер местоположения/навигации");
         } else {
             try {
-                if (checkSelfPermission(context,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(context,Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                if (checkSelfPermission(context,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                        && checkSelfPermission(context,Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
                     //    Activity#requestPermissions
                     back.onEvent("Установите разрешения GPS");
                     return;
-                }
+                    }
                 mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPSInterval * 1000, GPSDistance, locationListener);
                 mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, GPSInterval * 1000, GPSDistance, locationListener);
                 setDelay(GPSInterval, gpsClock);

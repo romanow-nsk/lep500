@@ -1,7 +1,9 @@
 package me.romanow.lep500;
 
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
@@ -13,11 +15,22 @@ public class FullScreenGraph extends BaseActivity {
         super.onCreate(savedInstanceState);
         try {
             setContentView(R.layout.graph_gorizontal);
+            getSupportActionBar().hide();
             LinearLayout lrr = (LinearLayout) findViewById(R.id.viewPanelHoriz);
+            LinearLayout hd = (LinearLayout) findViewById(R.id.viewPanelHead);
             FileDescriptionList fd = AppData.ctx().getFileList();
             LinearLayout graph = createMultiGraph(R.layout.graphviewhoriz);
             lrr.addView(graph);
             for (FileDescription ff : fd) {
+                Button bb = new Button(this);
+                bb.setTextColor(paintColors[colorNum] | 0xFF000000);
+                bb.setBackgroundColor(0xFF00574B);
+                bb.setTextSize(20);
+                bb.setHeight(40);
+                bb.setWidth(150);
+                bb.setPadding(10,0,0,0);
+                bb.setText(ff.srcNumber);
+                hd.addView(bb);
                 procArchive(ff);
                 }
             } catch (Exception ee){

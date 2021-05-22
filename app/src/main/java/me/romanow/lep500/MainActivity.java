@@ -1,5 +1,6 @@
 package me.romanow.lep500;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -8,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -15,8 +17,11 @@ import android.os.Bundle;
 
 import com.google.gson.Gson;
 import com.jjoe64.graphview.LineGraphView;
+import static androidx.core.content.ContextCompat.checkSelfPermission;
+
 
 import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 
 import android.provider.OpenableColumns;
@@ -45,6 +50,8 @@ import romanow.snn_simulator.fft.FFT;
 import romanow.snn_simulator.fft.FFTAudioTextFile;
 import romanow.snn_simulator.layer.Extreme;
 import romanow.snn_simulator.layer.LayerStatistic;
+
+import static androidx.core.content.ContextCompat.checkSelfPermission;
 
 public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
@@ -77,6 +84,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private final int CHOOSE_RESULT=100;
     private final int CHOOSE_RESULT_COPY=101;
     public final int REQUEST_ENABLE_BT=102;
+    public final int REQUEST_ENABLE_GPS=103;
     public final String BT_OWN_NAME="LEP500";
     public final String BT_SENSOR_NAME_PREFIX="VIBR_SENS";
     public final int BT_DISCOVERY_TIME_IN_SEC=300;
@@ -123,6 +131,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivity(enableBtIntent);
                 }
+
             new FFT();                          // статические данные
             createMenuList();
             guiThead = Thread.currentThread();
@@ -138,7 +147,14 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         // Регистрируем BroadcastReceiver
         IntentFilter filter=new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(blueToothReceiver, filter);// Не забудьте снять регистрацию в onDestroy
-        gpsService.startService(this);
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_ENABLE_GPS);
+            }
+        else
+            gpsService.startService(this);
         MenuButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -332,6 +348,19 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         addToLog(description.toString(), fullInfo ? 0 : greatTextSize);
         InputStream is = getContentResolver().openInputStream(uri);
         return new Pair(is,description);
+        }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode==REQUEST_ENABLE_GPS) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                gpsService.startService(this);
+                }
+            else {
+                addToLog("Геолокация не разрешена");
+               }
+            }
         }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
