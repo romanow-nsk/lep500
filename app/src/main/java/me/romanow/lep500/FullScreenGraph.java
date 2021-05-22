@@ -31,6 +31,9 @@ public class FullScreenGraph extends BaseActivity {
         }
 
     @Override
+    public void clearLog() {}
+
+    @Override
     public void addToLog(String ss, int textSize) {}
 
     @Override

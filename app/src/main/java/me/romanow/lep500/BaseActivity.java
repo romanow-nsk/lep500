@@ -25,6 +25,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public final static int paintColors[]={0x0000A000,0x000000FF,0x0000A0A0,0x00C000C0};
     protected int colorNum=0;
     protected double freqStep=0;
+    public abstract void clearLog();
     public abstract void addToLog(String ss, int textSize);
     public abstract void addToLogHide(String ss);
     public abstract void popupAndLog(String ss);

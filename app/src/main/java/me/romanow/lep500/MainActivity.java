@@ -80,7 +80,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     public final String BT_OWN_NAME="LEP500";
     public final String BT_SENSOR_NAME_PREFIX="VIBR_SENS";
     public final int BT_DISCOVERY_TIME_IN_SEC=300;
-    public final int BT_SCANNING_TIME_IN_SEC=30;
+    public final int BT_SCANNING_TIME_IN_SEC=60;
     private ImageView MenuButton;
     private ImageView GPSState;
     //--------------------------------------------------------------------------
@@ -148,7 +148,9 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                         procMenuItem(index);
                     }
                     @Override
-                    public void onLongSelect(int index) {}
+                    public void onLongSelect(int index) {
+                        int vv=1;
+                    }
                 }).create();
             }
         });
@@ -161,7 +163,9 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 "\uD83D\uDC7D";
         addToLog(title,20);
         }
-
+    public void clearLog(){
+        log.removeAllViews();
+        }
     public void popupAndLog(String ss){
         addToLog(ss);
         popupInfo(ss);

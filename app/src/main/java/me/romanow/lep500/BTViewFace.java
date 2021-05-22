@@ -61,6 +61,8 @@ public class BTViewFace {
                 public void onClick(View v) {
                     if (idx>=SensorMaxNumber || idx>=sensorList.size())
                         return;
+                    if (!sensorList.get(idx).isReady())
+                        return;
                     new ListBoxDialog(face, MenuItems, getSensorName(sensorList.get(idx)), new I_ListBoxListener() {
                         @Override
                         public void onSelect(int index) {
@@ -94,13 +96,13 @@ public class BTViewFace {
     }
     private void setBTScanerState(int state){
         BTScanerState.setImageResource(BTStateID[state]);
-    }
+        }
     private void setBTPopup(BTReceiver receiver,String text){
         int idx = sensorList.indexOf(receiver);
         if (idx!=-1 && idx < SensorMaxNumber)
             face.popupInfo(getSensorName(receiver)+":"+text);
         }
-    private void setBTName(final BTReceiver receiver){
+    private synchronized void setBTName(final BTReceiver receiver){
         face.guiCall(new Runnable() {
             @Override
             public void run() {
@@ -111,7 +113,7 @@ public class BTViewFace {
             }
         });
     }
-    private void setBTState(final BTReceiver receiver,final int state){
+    private synchronized void setBTState(final BTReceiver receiver,final int state){
         face.guiCall(new Runnable() {
             @Override
             public void run() {
@@ -123,7 +125,7 @@ public class BTViewFace {
             }
         });
     }
-    private void setBTState(final BTReceiver receiver){
+    private synchronized void setBTState(final BTReceiver receiver){
         face.guiCall(new Runnable() {
             @Override
             public void run() {
@@ -135,7 +137,7 @@ public class BTViewFace {
             }
         });
     }
-    private void setBTStateText(final BTReceiver receiver,final String text){
+    private synchronized void setBTStateText(final BTReceiver receiver,final String text){
         face.guiCall(new Runnable() {
             @Override
             public void run() {
@@ -167,10 +169,11 @@ public class BTViewFace {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             face.startActivityForResult(enableBtIntent, face.REQUEST_ENABLE_BT);
             return;
-        }
+            }
         bluetooth.setName(face.BT_OWN_NAME);
         int btState= bluetooth.getState();
         if (btState==BluetoothAdapter.STATE_ON){
+            face.clearLog();
             face.addToLog("Состояние BlueTooth: включен");
             setBTScanerState(BT_Green);
             }
@@ -281,6 +284,7 @@ public class BTViewFace {
             scanner.stopScan(BTScanCallback);
         setBTScanerState(BT_Gray);
         scannerOn=false;
+        scannerHandler.removeCallbacks(scanerTimeOut);
         }
     Handler scannerHandler = new Handler();
     Runnable scanerTimeOut = new Runnable() {
