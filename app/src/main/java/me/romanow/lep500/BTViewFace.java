@@ -190,6 +190,7 @@ public class BTViewFace {
             setBTScanerState(BT_Yellow);
         }
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        //adapter.startDiscovery();
         scanner = adapter.getBluetoothLeScanner();
         if (scanner != null) {
             sensorList.clear();
@@ -310,26 +311,35 @@ public class BTViewFace {
     //----------------------------------------------------------------------------------------------
     private final ScanCallback BTScanCallback = new ScanCallback() {
         @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            BluetoothDevice device = result.getDevice();
-            if (device.getName()==null)
-                return;
-            face.addToLog(true,"BlueTooth: "+device.getName()+" "+device.getAddress());
-            if (isMACAddressPresent(device.getAddress())){
-                face.addToLog(true,"повторное сканирование BlueTooth: "+device.getAddress());
-                return;
-            }
-            if (device.getName().startsWith(face.BT_SENSOR_NAME_PREFIX)){
-                face.addToLog(true,"BlueTooth: "+device.getName()+" подключение");
-                BTReceiver receiver = new BTReceiver(BTViewFace.this,BTBack);
-                receiver.blueToothOn(device);
-                sensorList.add(receiver);
-                }
+        public void onScanResult(final int callbackType, final ScanResult result) { // Синхронизация сканирования
+            face.guiCall(new Runnable() {
+                @Override
+                public void run() {
+                    BluetoothDevice device = result.getDevice();
+                    if (device.getName()==null)
+                        return;
+                    face.addToLog(true,"BlueTooth("+callbackType+"): "+device.getName()+" "+device.getAddress());
+                    if (isMACAddressPresent(device.getAddress())){
+                        face.addToLog(true,"повторное сканирование BlueTooth: "+device.getAddress());
+                        return;
+                    }
+                    if (device.getName().startsWith(face.BT_SENSOR_NAME_PREFIX)){
+                        face.addToLog(true,"BlueTooth: "+device.getName()+" подключение");
+                        BTReceiver receiver = new BTReceiver(BTViewFace.this,BTBack);
+                        receiver.blueToothOn(device);
+                        sensorList.add(receiver);
+                        }
+                    }
+                });
             }
         @Override
-        public void onBatchScanResults(List<ScanResult> results) {}
+        public void onBatchScanResults(List<ScanResult> results) {
+            face.addToLog("Группа результатов: "+results.size());
+            }
         @Override
-        public void onScanFailed(int errorCode) {}
+        public void onScanFailed(int errorCode) {
+            face.addToLog("Ошибка сканера: "+errorCode);
+            }
         };
     //---------------------------------------------------------------------------------------------------------
     public BTListener BTBack = new BTListener() {

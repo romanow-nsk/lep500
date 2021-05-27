@@ -714,6 +714,12 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 receiver.startMeasure(file2,true);
                 }
             });
+        menuList.add(new MenuItemAction("Выход") {
+            @Override
+            public void onSelect() {
+                finish();
+                }
+            });
         }
     //----------------------------------------------------------------------------------------------
     private  I_ArchveMultiSelector toGroupSelector = new I_ArchveMultiSelector() {
@@ -1045,7 +1051,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         if (!ff.exists()) {
             ff.mkdir();
             }
-        ArrayList<FileDescription> out = new ArrayList<>();
+        FileDescriptionList out = new FileDescriptionList();
         for(String ss : ff.list()){
             File file = new File(androidFileDirectory()+"/"+ss);
             if (file.isDirectory())
@@ -1059,14 +1065,23 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             else
                 out.add(dd);
             }
+        out.sort(new I_FDComparator() {
+            @Override
+            public int compare(FileDescription o2, FileDescription o1) {
+                return (int)(o2.createDate.getMillis() - o1.createDate.getMillis());
+                }
+            });
+        /*
         out.sort(new Comparator<FileDescription>() {
             @Override
             public int compare(FileDescription o1, FileDescription o2) {
                 return (int)(o2.createDate.getMillis() - o1.createDate.getMillis());
-            }
-        });
+                }
+            });
+         */
         return out;
         }
+
     public ArrayList<FileDescription> createDirArchive(){
         File ff = new File(androidFileDirectory());
         if (!ff.exists()) {
