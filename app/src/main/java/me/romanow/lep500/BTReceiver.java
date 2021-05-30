@@ -368,6 +368,10 @@ case SENSOR_ANS_DATA:
             }
         setState(BTStateOff);
         }
+    public void blueToothRetry() {
+        gatt.connect();
+        setState(BTStateNoScan);
+        }
     public void blueToothOn(BluetoothDevice device0) {
         device = device0;
         sensorName = device.getName();

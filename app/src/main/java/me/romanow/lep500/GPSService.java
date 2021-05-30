@@ -148,13 +148,21 @@ public class GPSService {
         }};
     private LocationListener locationListener = new LocationListener() {
         @Override
-        public void onLocationChanged(Location location) { }
+        public void onLocationChanged(Location location) {
+            int v=0;
+            }
         @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) { }
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            int v=0;
+        }
         @Override
-        public void onProviderEnabled(String provider) { }
+        public void onProviderEnabled(String provider) {
+            int v=0;
+        }
         @Override
-        public void onProviderDisabled(String provider) { }
+        public void onProviderDisabled(String provider) {
+           int v=0;
+        }
     };
 
 }

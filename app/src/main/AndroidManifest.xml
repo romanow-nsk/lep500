@@ -28,6 +28,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".FullScreenGraph" android:screenOrientation="reverseLandscape"/>
+        <activity android:name=".FullScreenWave" android:screenOrientation="reverseLandscape"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}"

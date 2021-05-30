@@ -675,7 +675,8 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         menuList.add(new MenuItemAction("Просмотр волны") {
             @Override
             public void onSelect() {
-                showWaveForm();
+                selectMultiFromArchive("Просмотр волны",procWaveSelectorFull);
+                //showWaveForm();
                 }
             });
         menuList.add(new MenuItemAction("Конвертировать в wave") {
@@ -801,6 +802,15 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         public void onSelect(FileDescriptionList fd, boolean longClick) {
             Intent intent = new Intent();
             intent.setClass(getApplicationContext(),FullScreenGraph.class);
+            AppData.ctx().setFileList(fd);
+            startActivity(intent);
+            }
+        };
+    private  I_ArchveMultiSelector procWaveSelectorFull = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
+            Intent intent = new Intent();
+            intent.setClass(getApplicationContext(),FullScreenWave.class);
             AppData.ctx().setFileList(fd);
             startActivity(intent);
             }

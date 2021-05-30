@@ -37,6 +37,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         return getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
         }
     //--------------------------------------------------------------------------
+    public void paintOne(float data[], int color){
+        paintOne(multiGraph,data,color,0,0,false);
+        }
     public void paintOne(LineGraphView graphView, float data[], int color, int noFirst, int noLast, boolean freqMode){
         GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length-noFirst-noLast];
         for(int j=noFirst;j<data.length-noLast;j++){                    // Подпись значений факторов j-ой ячейки

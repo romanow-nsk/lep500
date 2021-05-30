@@ -212,7 +212,8 @@ public class BTViewFace {
                 }
             }
             ScanSettings scanSettings = new ScanSettings.Builder()
-                    .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                    //.setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                     .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                     .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
                     .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
@@ -302,11 +303,11 @@ public class BTViewFace {
         BTDescriptor descriptor = face.set.addressMap.get(receiver.getSensorMAC());
         return descriptor==null ? receiver.getSensorName()+" "+(shortName ? "" : receiver.getSensorMAC()) : descriptor.btName;
         }
-    private boolean isMACAddressPresent(String ss){
+    private BTReceiver isMACAddressPresent(String ss){
         for(BTReceiver receiver : sensorList)
             if (receiver.getSensorMAC().equals(ss))
-                return true;
-        return false;
+                return receiver;
+        return null;
         }
     //----------------------------------------------------------------------------------------------
     private final ScanCallback BTScanCallback = new ScanCallback() {
@@ -319,10 +320,12 @@ public class BTViewFace {
                     if (device.getName()==null)
                         return;
                     face.addToLog(true,"BlueTooth("+callbackType+"): "+device.getName()+" "+device.getAddress());
-                    if (isMACAddressPresent(device.getAddress())){
+                    BTReceiver oldReceiver = isMACAddressPresent(device.getAddress());
+                    if (oldReceiver!=null){
                         face.addToLog(true,"повторное сканирование BlueTooth: "+device.getAddress());
+                        oldReceiver.blueToothRetry();
                         return;
-                    }
+                        }
                     if (device.getName().startsWith(face.BT_SENSOR_NAME_PREFIX)){
                         face.addToLog(true,"BlueTooth: "+device.getName()+" подключение");
                         BTReceiver receiver = new BTReceiver(BTViewFace.this,BTBack);
