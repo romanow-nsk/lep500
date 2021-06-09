@@ -1,4 +1,6 @@
-package me.romanow.lep500;
+package me.romanow.lep500.ble;
+
+import me.romanow.lep500.LEP500File;
 
 public interface BTListener {
     public void notify(BTReceiver sensor, boolean fullInfo, String ss);

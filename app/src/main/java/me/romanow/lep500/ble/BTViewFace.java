@@ -1,4 +1,4 @@
-package me.romanow.lep500;
+package me.romanow.lep500.ble;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -18,6 +18,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import me.romanow.lep500.I_EventListener;
+import me.romanow.lep500.I_ListBoxListener;
+import me.romanow.lep500.LEP500File;
+import me.romanow.lep500.ListBoxDialog;
+import me.romanow.lep500.MainActivity;
+import me.romanow.lep500.MultiListBoxDialog;
+import me.romanow.lep500.MultiListBoxListener;
+import me.romanow.lep500.OneParameterDialog;
+import me.romanow.lep500.R;
+
 public class BTViewFace {
     final public MainActivity face;
     public final int SensorMaxNumber=4;
@@ -32,7 +42,7 @@ public class BTViewFace {
     public final static int BT_Green=3;
     public final static int BT_LightRed=4;
     public final static int BT_LightGreen=5;
-    ArrayList<BTReceiver> sensorList = new ArrayList<>();
+    public ArrayList<BTReceiver> sensorList = new ArrayList<>();
     private final static int BTStateID[]={R.drawable.status_gray,R.drawable.status_red,R.drawable.status_yellow,
             R.drawable.status_green,R.drawable.status_light_red,R.drawable.status_light_green};
     public BTViewFace(MainActivity face) {

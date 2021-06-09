@@ -1,6 +1,5 @@
-package me.romanow.lep500;
+package me.romanow.lep500.ble;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -10,6 +9,8 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import java.util.List;
 import java.util.UUID;
+
+import me.romanow.lep500.LEP500File;
 
 import static android.bluetooth.BluetoothDevice.BOND_BONDED;
 import static android.bluetooth.BluetoothDevice.BOND_NONE;

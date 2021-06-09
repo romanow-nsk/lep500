@@ -113,6 +113,26 @@ public class FFTArray {
     public float []getOriginal(){
         return (float[])data.clone();
         }
+    public float []calcTrend(int nPoints){
+        float middles[] = new float[data.length];
+        for(int i=0;i<data.length;i++){
+            middles[i]=0;
+            }
+        if (nPoints==0) return middles;
+        for(int i=0;i<data.length;i++){
+            for(int j=i-nPoints;j<=i+nPoints;j++){
+                if (j<0)
+                    middles[i]+=data[0];
+                else
+                if(j>=data.length)
+                    middles[i]+=data[data.length-1];
+                else
+                    middles[i]+=data[j];
+                }
+            middles[i]/=2*nPoints+1;
+            }
+        return middles;
+        }
    //---------------- СТАТИЧЕСКАЯ ЧАСТЬ ---------------------------------------
    public static void normalizeLocal(float in[]){
         float max=in[0];

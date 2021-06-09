@@ -41,6 +41,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
+import me.romanow.lep500.ble.BTDescriptor;
+import me.romanow.lep500.ble.BTReceiver;
+import me.romanow.lep500.ble.BTViewFace;
+import me.romanow.lep500.ble.SensorGroupListener;
 import me.romanow.lep500.fft.Extreme;
 import me.romanow.lep500.fft.FFT;
 import me.romanow.lep500.fft.FFTAudioTextFile;
@@ -50,7 +54,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
     public YandexDiskService yadisk = new YandexDiskService(this);
     public MailSender mail = new MailSender(this);
-    LEP500Settings set = new LEP500Settings();
+    public LEP500Settings set = new LEP500Settings();
     //-------------- Постоянные параметры snn-core ---------------------------------------
     public Thread guiThead;
     private final boolean  p_Compress=false;        // Нет компрессии

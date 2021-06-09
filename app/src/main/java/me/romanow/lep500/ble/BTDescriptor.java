@@ -1,4 +1,4 @@
-package me.romanow.lep500;
+package me.romanow.lep500.ble;
 
 public class BTDescriptor {
     public String btName="";    // Логическое имя сенсора
