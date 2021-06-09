@@ -1,7 +1,6 @@
 package me.romanow.lep500;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -12,15 +11,12 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 
 import com.google.gson.Gson;
 import com.jjoe64.graphview.LineGraphView;
-import static androidx.core.content.ContextCompat.checkSelfPermission;
 
 
-import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 
@@ -44,14 +40,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.Comparator;
 
-import romanow.snn_simulator.fft.FFT;
-import romanow.snn_simulator.fft.FFTAudioTextFile;
-import romanow.snn_simulator.layer.Extreme;
-import romanow.snn_simulator.layer.LayerStatistic;
-
-import static androidx.core.content.ContextCompat.checkSelfPermission;
+import me.romanow.lep500.fft.Extreme;
+import me.romanow.lep500.fft.FFT;
+import me.romanow.lep500.fft.FFTAudioTextFile;
+import me.romanow.lep500.fft.FFTStatistic;
 
 public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
@@ -231,7 +224,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         }
 
     @Override
-    public void showStatisticFull(LayerStatistic inputStat) {
+    public void showStatisticFull(FFTStatistic inputStat) {
         if (fullInfo)
             showStatistic(inputStat);
         else
@@ -417,7 +410,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         procArchive(fd);
         }
 
-    private void showExtrems(LayerStatistic inputStat, boolean mode){
+    private void showExtrems(FFTStatistic inputStat, boolean mode){
         int sz = inputStat.getMids().length;
         addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
         ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true);
@@ -442,11 +435,11 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
 
-    public synchronized void showStatistic(LayerStatistic inputStat){
+    public synchronized void showStatistic(FFTStatistic inputStat){
         showExtrems(inputStat, true);
         showExtrems(inputStat, false);
         }
-    public synchronized void showShort(LayerStatistic inputStat){
+    public synchronized void showShort(FFTStatistic inputStat){
         ArrayList<Extreme> list = inputStat.createExtrems(true,noFirstPoints,noLastPoints,true);
         if (list.size()==0){
             addToLog("Экстремумов не найдено",greatTextSize);

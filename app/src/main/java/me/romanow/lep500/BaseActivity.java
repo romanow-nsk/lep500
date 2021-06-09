@@ -13,10 +13,10 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import romanow.snn_simulator.fft.FFT;
-import romanow.snn_simulator.fft.FFTAudioTextFile;
-import romanow.snn_simulator.fft.FFTParams;
-import romanow.snn_simulator.layer.LayerStatistic;
+import me.romanow.lep500.fft.FFT;
+import me.romanow.lep500.fft.FFTAudioTextFile;
+import me.romanow.lep500.fft.FFTParams;
+import me.romanow.lep500.fft.FFTStatistic;
 
 public abstract class BaseActivity extends AppCompatActivity {
     private LineGraphView multiGraph=null;
@@ -29,7 +29,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public abstract void addToLog(String ss, int textSize);
     public abstract void addToLogHide(String ss);
     public abstract void popupAndLog(String ss);
-    public abstract void showStatisticFull(LayerStatistic inputStat);
+    public abstract void showStatisticFull(FFTStatistic inputStat);
     public void addToLog(String ss){
         addToLog(ss,0);
         }
@@ -64,7 +64,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public LineGraphView getMultiGraph() {
         return multiGraph;
         }
-    public synchronized void addGraphView(LayerStatistic inputStat){
+    public synchronized void addGraphView(FFTStatistic inputStat){
         paintOne(multiGraph,inputStat.getMids(),paintColors[colorNum],0,0,true);
         colorNum++;
         }
@@ -97,8 +97,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
         //if (p_BlockSize!=1) p_BlockSize/=2;
         FFTParams params = new FFTParams().W(set.p_BlockSize* FFT.Size0).procOver(set.p_OverProc).
-                FFTWindowReduce(false).p_Cohleogram(false).p_GPU(false).compressMode(false).
-                winMode(set.winFun);
+                compressMode(false).winMode(set.winFun);
         FFT fft = new FFT();
         fft.setFFTParams(params);
         fft.calcFFTParams();

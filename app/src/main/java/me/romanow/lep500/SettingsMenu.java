@@ -9,7 +9,7 @@ import android.widget.*;
 
 import java.util.ArrayList;
 
-import romanow.snn_simulator.fft.FFT;
+import me.romanow.lep500.fft.FFT;
 
 public class SettingsMenu {
     private AlertDialog myDlg=null;

@@ -4,7 +4,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import romanow.snn_simulator.fft.FFTAudioTextFile;
+import me.romanow.lep500.fft.FFTAudioTextFile;
 
 public class FileDescription extends FFTAudioTextFile {
     DateTime createDate = new DateTime();

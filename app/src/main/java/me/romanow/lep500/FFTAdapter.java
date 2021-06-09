@@ -1,16 +1,16 @@
 package me.romanow.lep500;
 
-import romanow.snn_simulator.fft.FFT;
-import romanow.snn_simulator.fft.FFTCallBack;
-import romanow.snn_simulator.layer.LayerStatistic;
+import me.romanow.lep500.fft.FFT;
+import me.romanow.lep500.fft.FFTCallBack;
+import me.romanow.lep500.fft.FFTStatistic;
 
 import static me.romanow.lep500.MainActivity.createFatalMessage;
 
 public class FFTAdapter implements FFTCallBack {
-    private LayerStatistic inputStat;
+    private FFTStatistic inputStat;
     private BaseActivity main;
     public FFTAdapter(BaseActivity main0, String title){
-        inputStat = new LayerStatistic(title);
+        inputStat = new FFTStatistic(title);
         main = main0;
         }
     @Override

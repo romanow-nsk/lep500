@@ -3,11 +3,11 @@ package me.romanow.lep500;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-import romanow.snn_simulator.layer.LayerStatistic;
+import me.romanow.lep500.fft.FFTStatistic;
+
 
 public class FullScreenGraph extends BaseActivity {
     @Override
@@ -54,7 +54,8 @@ public class FullScreenGraph extends BaseActivity {
 
     @Override
     public void popupAndLog(String ss) {}
-
     @Override
-    public void showStatisticFull(LayerStatistic inputStat) {}
+    public void showStatisticFull(FFTStatistic inputStat) {
+        }
+
 }

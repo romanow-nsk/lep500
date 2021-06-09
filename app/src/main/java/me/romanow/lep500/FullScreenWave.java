@@ -10,8 +10,9 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 
-import romanow.snn_simulator.fft.FFTAudioTextFile;
-import romanow.snn_simulator.layer.LayerStatistic;
+import me.romanow.lep500.fft.FFTAudioTextFile;
+import me.romanow.lep500.fft.FFTStatistic;
+
 
 public class FullScreenWave extends BaseActivity {
     @Override
@@ -71,5 +72,6 @@ public class FullScreenWave extends BaseActivity {
     public void popupAndLog(String ss) {}
 
     @Override
-    public void showStatisticFull(LayerStatistic inputStat) {}
+    public void showStatisticFull(FFTStatistic inputStat) {}
+
 }
