@@ -50,6 +50,7 @@ public class FFTStatistic {
     private SmoothArray sum2T=null;         // Сумма квадратов по времени
     private SmoothArray sum2DiffF=null;     // Корреляция по частоте
     private SmoothArray sum2DiffT=null;     // Корреляция по времени
+    private SmoothArray normalized = null;
     public void reset() {
         noReset=true;
         }
@@ -125,6 +126,29 @@ public class FFTStatistic {
             }
         return out;
         }
+    public float normalizeStart(){
+        if (count==0) return 0;
+        normalized = new SmoothArray(size);
+        for(int i=0;i<normalized.data.length;i++)
+            normalized.data[i]=sumT.data[i]/count;
+        double max=normalized.data[0];
+        for(float vv : normalized.data)
+            if (vv > max)
+                max = vv;
+        return (float) max;
+        }
+    public void normalizelFinish(float max){
+        for(int i=0;i<normalized.data.length;i++)
+            normalized.data[i]/=max;
+        }
+    public float normalizeMax(){
+        if (count==0) return 0;
+        double max=sumT.data[0];
+        for(float vv : sumT.data)
+            if (vv > max)
+                max = vv;
+        return (float) max/count;
+        }
     public float getMid(){
         return getMid(getMids());
         }
@@ -143,8 +167,9 @@ public class FFTStatistic {
     public float getDiffT(){
         return getMid(getDiffsT());
         }
+    public float[] getNormalized() { return normalized.data; }
 
-    private void sort(ArrayList<Extreme> list,Comparator<Extreme> comparator){
+    private void sort(ArrayList<Extreme> list, Comparator<Extreme> comparator){
         int sz = list.size();
         for(int i=1;i<sz;i++)
             for(int j=i;j>0 && comparator.compare(list.get(j-1),list.get(j))>0;j--){
@@ -185,7 +210,7 @@ public class FFTStatistic {
         }
     public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, boolean ownSort, int trendPointsNum){
         ArrayList<Extreme> out = new ArrayList<>();
-        float data[] = sumT.getOriginal();
+        float data[] = normalized.getOriginal();
         float trend[] = Utils.calcTrend(data,trendPointsNum);
         for(int i=nFirst+1;i<size-1-nLast;i++)
             if (data[i]>data[i-1] && data[i]>data[i+1]){

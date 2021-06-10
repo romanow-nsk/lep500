@@ -74,27 +74,25 @@ public abstract class BaseActivity extends AppCompatActivity {
         deffered.clear();
         }
     public void defferedFinish(){
-        ArrayList<float[]> list = normalize();
-        for(int i=0;i<deffered.size() && i<4;i++)
-            paintOne(multiGraph,list.get(i),paintColors[i],0,0,true);
+        normalize();
+        for(int i=0;i<deffered.size() && i<4;i++){
+            showStatisticFull(deffered.get(i));
+            paintOne(multiGraph,deffered.get(i).getNormalized(),paintColors[i],0,0,true);
+            }
         }
     public void defferedAdd(FFTStatistic inputStat){
         deffered.add(inputStat);
         }
-    private ArrayList<float[]> normalize(){
-        ArrayList<float[]> out = new ArrayList<>();
+    private void normalize(){
         double max=0;
-        for(FFTStatistic statistic : deffered){
-            float mas[] = statistic.getMids();
-            out.add(mas);
-            for(double vv : mas)
-                if (vv > max) max=vv;
+        for(FFTStatistic statistic : deffered) {
+            float max2 = statistic.normalizeStart();
+            if (max2 > max)
+                max = max2;
             }
-        for(float mm[] : out){
-            for(int i=0;i<mm.length;i++)
-                mm[i]/=max;
+        for(FFTStatistic statistic : deffered) {
+            statistic.normalizelFinish((float) max);
             }
-        return out;
         }
     //-----------------------------------------------------------------------------------------------------
     public synchronized void addGraphView(FFTStatistic inputStat){
@@ -139,8 +137,6 @@ public abstract class BaseActivity extends AppCompatActivity {
         addToLogHide("Кадр: "+set.p_BlockSize*FFT.Size0);
         addToLogHide("Перекрытие: "+set.p_OverProc);
         addToLogHide("Дискретность: "+String.format("%5.4f",freqStep)+" гц");
-        //inputStat.reset();
-        //fft.fftDirect(xx,back);
         fft.fftDirect(xx,new FFTAdapter(this,title));
     }
 

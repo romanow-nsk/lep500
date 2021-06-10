@@ -841,10 +841,12 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         @Override
         public void onSelect(FileDescriptionList fd, boolean longClick) {
             log.addView(createMultiGraph(R.layout.graphview));
+            defferedStart();
             for (FileDescription ff : fd){
                 procArchive(ff,true);
+                }
+            defferedFinish();
             }
-        }
     };
     private  I_ArchveSelector convertSelector = new I_ArchveSelector() {
         @Override
