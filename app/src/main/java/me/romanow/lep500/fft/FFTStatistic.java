@@ -16,15 +16,13 @@ import java.util.Comparator;
 
 import me.romanow.lep500.FileDescription;
 import me.romanow.lep500.I_FDComparator;
+import me.romanow.lep500.Utils;
 
 
 public class FFTStatistic {
-    class SmoothArray{
-        float data[];
-        SmoothArray(int size){
-            data = new float[size];
-            for(int i=0;i<size;i++)
-                data[i]=0;
+    class SmoothArray extends FFTArray{
+        public SmoothArray(int size){
+            super(size);
             }
         void smoothOne(){
             int size = data.length;
@@ -40,6 +38,10 @@ public class FFTStatistic {
                 smoothOne();
             }
         }
+    public final static int SortAbs=0;
+    public final static int SortDiff=1;
+    public final static int SortTrend=2;
+    public final static int TrendPointsNum=100;
     private String name="";
     private int count=0;
     private int size=0;
@@ -145,63 +147,58 @@ public class FFTStatistic {
 
     private void sort(ArrayList<Extreme> list,Comparator<Extreme> comparator){
         int sz = list.size();
-        for(int i=0;i<sz;i++)
-            for(int j=1;j<sz;j++)
-                if (comparator.compare(list.get(j-1),list.get(j))<0){
-                    Extreme cc = list.get(j-1);
-                    list.set(j-1,list.get(j));
-                    list.set(j,cc);
+        for(int i=1;i<sz;i++)
+            for(int j=i;j>0 && comparator.compare(list.get(j-1),list.get(j))>0;j--){
+                Extreme cc = list.get(j-1);
+                list.set(j-1,list.get(j));
+                list.set(j,cc);
                 }
         }
+    //---------------------------- Компараторы для видов сортировки
+    Comparator<Extreme> comparatorList[]= new Comparator[]{
+        new Comparator<Extreme>() {
+            @Override
+            public int compare(Extreme o1, Extreme o2) {
+                if (o1.value==o2.value) return 0;
+                return o1.value > o2.value ? -1 : 1;
+                }
+            },
+        new Comparator<Extreme>() {
+            @Override
+            public int compare(Extreme o1, Extreme o2) {
+                if (o1.diff==o2.diff) return 0;
+                return o1.diff > o2.diff ? -1 : 1;
+                }
+            },
+        new Comparator<Extreme>() {
+            @Override
+            public int compare(Extreme o1, Extreme o2) {
+                double vv1 = o1.trend;
+                double vv2 = o2.trend;
+                if (vv1==vv2) return 0;
+                return vv1 > vv2 ? -1 : 1;
+            }
+        },
+    };
 
-
-    public ArrayList<Extreme> createExtrems(boolean byLevel, int nFirst, int nLast){
-        return createExtrems(byLevel, nFirst, nLast,false);
+    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast){
+        return createExtrems(mode, nFirst, nLast,false);
         }
-    public ArrayList<Extreme> createExtrems(boolean byLevel, int nFirst, int nLast, boolean ownSort){
+    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, boolean ownSort){
         ArrayList<Extreme> out = new ArrayList<>();
+        float data[] = sumT.getOriginal();
+        float trend[] = Utils.calcTrend(data,TrendPointsNum);
         for(int i=nFirst+1;i<size-1-nLast;i++)
-            if (sumT.data[i]>sumT.data[i-1] && sumT.data[i]>sumT.data[i+1]){
+            if (data[i]>data[i-1] && data[i]>data[i+1]){
                 int k1,k2;
-                for(k1=i;k1>0 && sumT.data[k1]>sumT.data[k1-1];k1--);
-                for(k2=i;k2<sumT.data.length-1 && sumT.data[k2]>sumT.data[k2+1];k2++);
-                double d1 = sumT.data[i]-sumT.data[k1];
-                double d2 = sumT.data[i]-sumT.data[k2];
+                for(k1=i;k1>0 && data[k1]>data[k1-1];k1--);
+                for(k2=i;k2<data.length-1 && data[k2]>data[k2+1];k2++);
+                double d1 = data[i]-data[k1];
+                double d2 = data[i]-data[k2];
                 double diff = Math.sqrt((d1*d1+d2*d2)/2);
-                out.add(new Extreme(sumT.data[i]/count,i,i* FFT.sizeHZ/2/size,diff/count));
+                out.add(new Extreme(data[i]/count,i,i* FFT.sizeHZ/2/size,diff/count,(data[i]-trend[i])/count));
                 }
-        if (!ownSort){
-            if (byLevel)
-                sort(out,new Comparator<Extreme>() {
-                    @Override
-                    public int compare(Extreme o1, Extreme o2) {
-                        if (o1.value==o2.value) return 0;
-                        return o1.value > o2.value ? -1 : 1;
-                        }
-                    });
-            else
-                sort(out,new Comparator<Extreme>() {
-                    @Override
-                    public int compare(Extreme o1, Extreme o2) {
-                        if (o1.diff==o2.diff) return 0;
-                        return o1.diff > o2.diff ? -1 : 1;
-                    }
-                });
-            }
-        else{
-            Extreme xx[]=new Extreme[out.size()];
-            out.toArray(xx);
-            for(int i=1;i<xx.length;i++){
-                for(int k=i; k>0 && (byLevel ? xx[k].value > xx[k-1].value : xx[k].diff > xx[k-1].diff);k--){
-                    Extreme cc = xx[k];
-                    xx[k] = xx[k-1];
-                    xx[k-1]=cc;
-                    }
-                }
-            out.clear();
-            for(Extreme ex : xx)
-                out.add(ex);
-            }
+        sort(out,comparatorList[mode]);
         return out;
         }
     //--------------------------------------------------------------------------

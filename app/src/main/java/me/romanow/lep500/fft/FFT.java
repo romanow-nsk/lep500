@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 
+import me.romanow.lep500.Utils;
+
 public class FFT {
     public final static int  Size0= 1024;           // 1024 базовая степень FFT
     public final static int sizeHZ = 44100;         // Частотный диапазон оцифровки
@@ -24,41 +26,6 @@ public class FFT {
     private FFTAudioSource audioInputStream=null;
     private Complex[] complexSpectrum=null;
     private FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
-    //------------- СТАТИЧЕСКАЯ ЧАСТЬ
-    private static float expValues[]=null;         // Подчитаниие заранее значения экспоненты
-    private static float dExp=0.01F;                // Шаг экспоненты
-    private static float expLimit=50;              // Диапазон экспоненты
-    private static void calcExp(){
-        if (expValues!=null)
-            return;
-        expValues = new float[(int)(expLimit/dExp)];
-        for(int i=0;i<expValues.length;i++)
-            expValues[i] = (float)(Math.exp(-i*dExp));
-        }
-    public static float getExp(float x){       // Значение
-        if (x<0 || x>expLimit)
-            return (float)(Math.exp(-x));
-        calcExp();
-        return expValues[(int)(x/dExp)];
-        }
-    public static double []convert(float in[]){
-        double out[]=new double[in.length];
-        for(int i=0;i<in.length;i++)
-            out[i]=in[i];
-        return out;
-        }
-    public static float []convert(double in[]){
-        float out[]=new float[in.length];
-        for(int i=0;i<in.length;i++)
-            out[i]=(float)in[i];
-        return out;
-        }
-    private static float[] reduceTo(float in[]){
-        float out[] = new float[in.length/2];
-        for(int i=0;i<out.length;i++)
-            out[i]=in[i];
-        return out;
-        }
     //---------------------------------------------------------------------------------------------
     public final static int WinModeRectangle=0;     // Прямоугольное окно
     public final static int WinModeTriangle=1;      // Треугольное окно
@@ -102,7 +69,7 @@ public class FFT {
         stepHZLinear = ((float)sizeHZ)/pars.W();
         stepMS = 10*pars.W()*(100-pars.procOver())/sizeHZ;
         totalMS=0;
-        calcExp();
+        Utils.calcExp();
         }
     public float getStepHZLinear() {
         return stepHZLinear;
@@ -205,7 +172,7 @@ public class FFT {
     */
     public void fftDirectStandart(){
         long timeStart = new Date().getTime();
-        complexSpectrum = fft.transform(convert(wave),TransformType.FORWARD);
+        complexSpectrum = fft.transform(Utils.convert(wave),TransformType.FORWARD);
         float radice = (float)(1 / Math.sqrt(wave.length));
         for(int i = 0; i < wave.length/2 + 1; i++){
             spectrum.set(i, (float)complexSpectrum[i].abs()*radice);

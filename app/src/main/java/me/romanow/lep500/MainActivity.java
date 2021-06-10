@@ -46,6 +46,11 @@ import me.romanow.lep500.ble.BTReceiver;
 import me.romanow.lep500.ble.BTViewFace;
 import me.romanow.lep500.ble.SensorGroupListener;
 import me.romanow.lep500.fft.Extreme;
+import me.romanow.lep500.fft.ExtremeAbs;
+import me.romanow.lep500.fft.ExtremeDiff;
+import me.romanow.lep500.fft.ExtremeFacade;
+import me.romanow.lep500.fft.ExtremeNull;
+import me.romanow.lep500.fft.ExtremeTrend;
 import me.romanow.lep500.fft.FFT;
 import me.romanow.lep500.fft.FFTAudioTextFile;
 import me.romanow.lep500.fft.FFTStatistic;
@@ -414,7 +419,22 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         procArchive(fd);
         }
 
-    private void showExtrems(FFTStatistic inputStat, boolean mode){
+    private Class extremeFacade[] = new Class[]{
+        ExtremeAbs.class,
+        ExtremeDiff.class,
+        ExtremeTrend.class,
+        };
+    private ExtremeFacade createFacade(Extreme extreme, int mode){
+        try {
+            ExtremeFacade facade = (ExtremeFacade)extremeFacade[mode].newInstance();
+            facade.serExtreme(extreme);
+            return facade;
+            } catch (Exception e) {
+                addToLog("Ошибка: "+e.toString());
+                return new ExtremeNull();
+                }
+        }
+    private void showExtrems(FFTStatistic inputStat, int mode){
         int sz = inputStat.getMids().length;
         addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
         ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true);
@@ -422,29 +442,32 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             addToLog("Экстремумов не найдено");
             return;
             }
-        if (mode)
+        if (mode == FFTStatistic.SortAbs)
             addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,paintColors[colorNum]);
         int count = nFirstMax < list.size() ? nFirstMax : list.size();
-        Extreme extreme = list.get(0);
-        double val0 = mode ? extreme.value : extreme.diff;
-        addToLog(mode ? "По амплитуде" : "По спаду");
-        addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц",extreme.value,extreme.diff,extreme.idx*freqStep));
+        ExtremeFacade facade = createFacade(list.get(0),mode);
+        double val0 = facade.getValue();
+        addToLog(facade.getTitle());
+        Extreme extreme = facade.extreme();
+        addToLog("Ампл     Пик(абс) Пик(отн) Частота(гц)");
+        addToLog(String.format("%6.4f   %6.4f    %6.4f      %6.4f",extreme.value,extreme.diff,extreme.trend,extreme.idx*freqStep));
         double sum=0;
         for(int i=1; i<count;i++){
-            extreme = list.get(i);
-            double proc = (mode ? extreme.value : extreme.diff)*100/val0;
+            facade = createFacade(list.get(i),mode);
+            double proc = facade.getValue()*100/val0;
             sum+=proc;
-            addToLog(String.format("Ампл=%6.4f Пик=%6.4f f=%6.4f гц %d%%",extreme.value,extreme.diff, extreme.idx*freqStep,(int)proc));
+            extreme = facade.extreme();
+            addToLog(String.format("%6.4f   %6.4f    %6.4f      %6.4f",extreme.value,extreme.diff,extreme.trend,extreme.idx*freqStep));
             }
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
 
     public synchronized void showStatistic(FFTStatistic inputStat){
-        showExtrems(inputStat, true);
-        showExtrems(inputStat, false);
+        for(int i=0;i<3;i++)
+            showExtrems(inputStat,i);
         }
     public synchronized void showShort(FFTStatistic inputStat){
-        ArrayList<Extreme> list = inputStat.createExtrems(true,noFirstPoints,noLastPoints,true);
+        ArrayList<Extreme> list = inputStat.createExtrems(FFTStatistic.SortAbs,noFirstPoints,noLastPoints,true);
         if (list.size()==0){
             addToLog("Экстремумов не найдено",greatTextSize);
             return;

@@ -7,8 +7,10 @@ package me.romanow.lep500.fft;
 
 //     Нормальзованный массив данных
 
+import me.romanow.lep500.Utils;
+
 public class FFTArray {
-    private float data[]=new float[0];
+    protected float data[]=new float[0];
     private float diff[]=new float[0];
     private float max=0;
     private int count=0;
@@ -98,7 +100,7 @@ public class FFTArray {
         if (!compressMode)
             return;
         for(int i=0;i<data.length;i++){
-            data[i] = 1-FFT.getExp(compressGrade*data[i]/max);
+            data[i] = 1- Utils.getExp(compressGrade*data[i]/max);
             }
         }
     public float []getCompressed(boolean compressMode, float compressGrade, float k){
@@ -106,44 +108,11 @@ public class FFTArray {
             return getNormalized();
         float out[] = getNormalized(k);
         for(int i=0;i<out.length;i++){
-            out[i] = 1-FFT.getExp(compressGrade*out[i]/max);
+            out[i] = 1-Utils.getExp(compressGrade*out[i]/max);
             }
         return out;
         }
     public float []getOriginal(){
         return (float[])data.clone();
-        }
-    public float []calcTrend(int nPoints){
-        float middles[] = new float[data.length];
-        for(int i=0;i<data.length;i++){
-            middles[i]=0;
-            }
-        if (nPoints==0) return middles;
-        for(int i=0;i<data.length;i++){
-            for(int j=i-nPoints;j<=i+nPoints;j++){
-                if (j<0)
-                    middles[i]+=data[0];
-                else
-                if(j>=data.length)
-                    middles[i]+=data[data.length-1];
-                else
-                    middles[i]+=data[j];
-                }
-            middles[i]/=2*nPoints+1;
-            }
-        return middles;
-        }
-   //---------------- СТАТИЧЕСКАЯ ЧАСТЬ ---------------------------------------
-   public static void normalizeLocal(float in[]){
-        float max=in[0];
-        for(int i=0;i<in.length;i++){
-            if (in[i]>max)
-                max = in[i];
-            }
-        if (max==0)
-            return;
-        for(int i=0;i<in.length;i++){
-            in[i]/=max;
-            }        
         }
 }
