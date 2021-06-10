@@ -54,6 +54,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         colorNum=0;
         LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(resId, null);
         LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)panel.getLayoutParams();
+        params.height = (int)(getResources().getDisplayMetrics().widthPixels*0.66);
+        panel.setLayoutParams(params);
         multiGraph = new LineGraphView(this,"");
         multiGraph.setScalable(true);
         multiGraph.setScrollable(true);
