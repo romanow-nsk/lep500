@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 import me.romanow.lep500.fft.FFT;
 import me.romanow.lep500.fft.FFTAudioTextFile;
@@ -67,6 +68,35 @@ public abstract class BaseActivity extends AppCompatActivity {
     public LineGraphView getMultiGraph() {
         return multiGraph;
         }
+    //--------- Отложенная отрисовка с нормализацией --------------------------------------------------
+    private ArrayList<FFTStatistic> deffered = new ArrayList<>();
+    public void defferedStart(){
+        deffered.clear();
+        }
+    public void defferedFinish(){
+        ArrayList<float[]> list = normalize();
+        for(int i=0;i<deffered.size() && i<4;i++)
+            paintOne(multiGraph,list.get(i),paintColors[i],0,0,true);
+        }
+    public void defferedAdd(FFTStatistic inputStat){
+        deffered.add(inputStat);
+        }
+    private ArrayList<float[]> normalize(){
+        ArrayList<float[]> out = new ArrayList<>();
+        double max=0;
+        for(FFTStatistic statistic : deffered){
+            float mas[] = statistic.getMids();
+            out.add(mas);
+            for(double vv : mas)
+                if (vv > max) max=vv;
+            }
+        for(float mm[] : out){
+            for(int i=0;i<mm.length;i++)
+                mm[i]/=max;
+            }
+        return out;
+        }
+    //-----------------------------------------------------------------------------------------------------
     public synchronized void addGraphView(FFTStatistic inputStat){
         paintOne(multiGraph,inputStat.getMids(),paintColors[colorNum],0,0,true);
         colorNum++;

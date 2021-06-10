@@ -41,7 +41,6 @@ public class FFTStatistic {
     public final static int SortAbs=0;
     public final static int SortDiff=1;
     public final static int SortTrend=2;
-    public final static int TrendPointsNum=100;
     private String name="";
     private int count=0;
     private int size=0;
@@ -181,13 +180,13 @@ public class FFTStatistic {
         },
     };
 
-    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast){
-        return createExtrems(mode, nFirst, nLast,false);
+    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, int trendPointsNum){
+        return createExtrems(mode, nFirst, nLast,false,trendPointsNum);
         }
-    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, boolean ownSort){
+    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, boolean ownSort, int trendPointsNum){
         ArrayList<Extreme> out = new ArrayList<>();
         float data[] = sumT.getOriginal();
-        float trend[] = Utils.calcTrend(data,TrendPointsNum);
+        float trend[] = Utils.calcTrend(data,trendPointsNum);
         for(int i=nFirst+1;i<size-1-nLast;i++)
             if (data[i]>data[i-1] && data[i]>data[i+1]){
                 int k1,k2;

@@ -23,7 +23,8 @@ public class FFTAdapter implements FFTCallBack {
             }
         inputStat.smooth(AppData.ctx().set().kSmooth);
         main.showStatisticFull(inputStat);
-        main.addGraphView(inputStat);
+        main.defferedAdd(inputStat);
+        //main.addGraphView(inputStat);
         //main.addToLog("");
         }
     @Override

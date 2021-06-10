@@ -437,7 +437,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private void showExtrems(FFTStatistic inputStat, int mode){
         int sz = inputStat.getMids().length;
         addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
-        ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true);
+        ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true,set.nTrendPoints);
         if (list.size()==0){
             addToLog("Экстремумов не найдено");
             return;
@@ -467,7 +467,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             showExtrems(inputStat,i);
         }
     public synchronized void showShort(FFTStatistic inputStat){
-        ArrayList<Extreme> list = inputStat.createExtrems(FFTStatistic.SortAbs,noFirstPoints,noLastPoints,true);
+        ArrayList<Extreme> list = inputStat.createExtrems(FFTStatistic.SortAbs,noFirstPoints,noLastPoints,true,set.nTrendPoints);
         if (list.size()==0){
             addToLog("Экстремумов не найдено",greatTextSize);
             return;
@@ -812,9 +812,11 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         @Override
         public void onSelect(FileDescriptionList fd, boolean longClick) {
             log.addView(createMultiGraph(R.layout.graphview));
+            defferedStart();
             for (FileDescription ff : fd){
                 procArchive(ff,false);
                 }
+            defferedFinish();
             }
         };
     private  I_ArchveMultiSelector procViewSelectorFull = new I_ArchveMultiSelector() {

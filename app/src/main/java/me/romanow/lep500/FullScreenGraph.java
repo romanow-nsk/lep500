@@ -21,6 +21,7 @@ public class FullScreenGraph extends BaseActivity {
             FileDescriptionList fd = AppData.ctx().getFileList();
             LinearLayout graph = createMultiGraph(R.layout.graphviewhoriz);
             lrr.addView(graph);
+            defferedStart();
             for (FileDescription ff : fd) {
                 Button bb = new Button(this);
                 bb.setTextColor(paintColors[colorNum] | 0xFF000000);
@@ -33,6 +34,7 @@ public class FullScreenGraph extends BaseActivity {
                 hd.addView(bb);
                 procArchive(ff);
                 }
+            defferedFinish();
             } catch (Exception ee){
                 addToLog(createFatalMessage(ee,10));
                 }
