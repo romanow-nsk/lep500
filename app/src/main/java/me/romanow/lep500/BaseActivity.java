@@ -23,14 +23,13 @@ public abstract class BaseActivity extends AppCompatActivity {
     private LineGraphView multiGraph=null;
     public final static int greatTextSize=20;             // Крупный шрифт
     public final static int KF100=FFT.sizeHZ/100;
-    public final static int paintColors[]={0x0000A000,0x000000FF,0x0000A0A0,0x00C000C0};
-    protected int colorNum=0;
+    private final static int paintColors[]={0x0000A000,0x000000FF,0x0000A0A0,0x00C000C0};
     protected double freqStep=0;
     public abstract void clearLog();
     public abstract void addToLog(String ss, int textSize);
     public abstract void addToLogHide(String ss);
     public abstract void popupAndLog(String ss);
-    public abstract void showStatisticFull(FFTStatistic inputStat);
+    public abstract void showStatisticFull(FFTStatistic inputStat, int idx);
     public void addToLog(String ss){
         addToLog(ss,0);
         }
@@ -38,6 +37,11 @@ public abstract class BaseActivity extends AppCompatActivity {
         return getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
         }
     //--------------------------------------------------------------------------
+    public int getPaintColor(int idx){
+        if (idx >= paintColors.length)
+            idx = paintColors.length-1;
+        return paintColors[idx];
+        }
     public void paintOne(float data[], int color){
         paintOne(multiGraph,data,color,0,0,false);
         }
@@ -46,13 +50,12 @@ public abstract class BaseActivity extends AppCompatActivity {
         for(int j=noFirst;j<data.length-noLast;j++){                    // Подпись значений факторов j-ой ячейки
             double freq = freqMode ? (j*50./data.length) : (j/100.);
             zz[j-noFirst] = new GraphView.GraphViewData(freq,data[j]);
-        }
+            }
         GraphViewSeries series = new GraphViewSeries(zz);
         series.getStyle().color = color | 0xFF000000;
         graphView.addSeries(series);
         }
     public LinearLayout createMultiGraph(int resId,double procHigh){
-        colorNum=0;
         LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(resId, null);
         LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
         if (procHigh!=0){
@@ -77,9 +80,11 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
     public void defferedFinish(){
         normalize();
-        for(int i=0;i<deffered.size() && i<4;i++){
-            showStatisticFull(deffered.get(i));
-            paintOne(multiGraph,deffered.get(i).getNormalized(),paintColors[i],0,0,true);
+        for(int i=0,j=0;i<deffered.size();i++){
+            showStatisticFull(deffered.get(i),i);
+            paintOne(multiGraph,deffered.get(i).getNormalized(),paintColors[j],0,0,true);
+            if (j<paintColors.length-1)
+                j++;
             }
         }
     public void defferedAdd(FFTStatistic inputStat){
@@ -97,9 +102,8 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         }
     //-----------------------------------------------------------------------------------------------------
-    public synchronized void addGraphView(FFTStatistic inputStat){
-        paintOne(multiGraph,inputStat.getMids(),paintColors[colorNum],0,0,true);
-        colorNum++;
+    public synchronized void addGraphView(FFTStatistic inputStat, int idx){
+        paintOne(multiGraph,inputStat.getMids(),getPaintColor(idx),0,0,true);
         }
     public void procArchive(FileDescription fd){
         String fname = fd.originalFileName;

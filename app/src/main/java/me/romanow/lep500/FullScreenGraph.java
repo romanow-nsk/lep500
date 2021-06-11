@@ -22,9 +22,10 @@ public class FullScreenGraph extends BaseActivity {
             LinearLayout graph = createMultiGraph(R.layout.graphviewhoriz,0);
             lrr.addView(graph);
             defferedStart();
+            int ii=0;
             for (FileDescription ff : fd) {
                 Button bb = new Button(this);
-                bb.setTextColor(paintColors[colorNum] | 0xFF000000);
+                bb.setTextColor(getPaintColor(ii++) | 0xFF000000);
                 bb.setBackgroundColor(0xFF00574B);
                 bb.setTextSize(20);
                 bb.setHeight(40);
@@ -57,7 +58,7 @@ public class FullScreenGraph extends BaseActivity {
     @Override
     public void popupAndLog(String ss) {}
     @Override
-    public void showStatisticFull(FFTStatistic inputStat) {
+    public void showStatisticFull(FFTStatistic inputStat,int idx) {
         }
 
 }

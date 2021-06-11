@@ -26,10 +26,10 @@ public class FullScreenWave extends BaseActivity {
             FileDescriptionList fd = AppData.ctx().getFileList();
             LinearLayout graph = createMultiGraph(R.layout.graphviewhoriz,0);
             lrr.addView(graph);
-            colorNum=0;
+            int idx=0;
             for (FileDescription ff : fd) {
                 Button bb = new Button(this);
-                bb.setTextColor(paintColors[colorNum] | 0xFF000000);
+                bb.setTextColor(getPaintColor(idx) | 0xFF000000);
                 bb.setBackgroundColor(0xFF00574B);
                 bb.setTextSize(20);
                 bb.setHeight(40);
@@ -43,11 +43,10 @@ public class FullScreenWave extends BaseActivity {
                     addToLog(fd.toString(),greatTextSize);
                     FFTAudioTextFile xx = new FFTAudioTextFile();
                     xx.readData(new BufferedReader(new InputStreamReader(fis, "Windows-1251")));
-                    paintOne(xx.getData(),paintColors[colorNum] | 0xFF000000);
+                    paintOne(xx.getData(),getPaintColor(idx++) | 0xFF000000);
                     } catch (Throwable e) {
                         addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
                         }
-                colorNum++;
                 }
             } catch (Exception ee){
                 addToLog(createFatalMessage(ee,10));
@@ -72,6 +71,6 @@ public class FullScreenWave extends BaseActivity {
     public void popupAndLog(String ss) {}
 
     @Override
-    public void showStatisticFull(FFTStatistic inputStat) {}
+    public void showStatisticFull(FFTStatistic inputStat, int idx) {}
 
 }

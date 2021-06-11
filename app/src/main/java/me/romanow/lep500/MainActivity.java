@@ -234,11 +234,11 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         }
 
     @Override
-    public void showStatisticFull(FFTStatistic inputStat) {
+    public void showStatisticFull(FFTStatistic inputStat,int idx) {
         if (fullInfo)
-            showStatistic(inputStat);
+            showStatistic(inputStat,idx);
         else
-            showShort(inputStat);
+            showShort(inputStat,idx);
         }
 
     public void addToLog(boolean fullInfoMes, final String ss, final int textSize){
@@ -435,7 +435,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 return new ExtremeNull();
                 }
         }
-    private void showExtrems(FFTStatistic inputStat, int mode){
+    private void showExtrems(FFTStatistic inputStat, int mode, int idx){
         int sz = inputStat.getMids().length;
         addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
         ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true,set.nTrendPoints);
@@ -444,7 +444,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             return;
             }
         if (mode == FFTStatistic.SortAbs)
-            addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,paintColors[colorNum]);
+            addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,getPaintColor(idx));
         int count = nFirstMax < list.size() ? nFirstMax : list.size();
         ExtremeFacade facade = createFacade(list.get(0),mode);
         double val0 = facade.getValue();
@@ -463,17 +463,17 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
 
-    public synchronized void showStatistic(FFTStatistic inputStat){
+    public synchronized void showStatistic(FFTStatistic inputStat,int idx){
         for(int i=0;i<3;i++)
-            showExtrems(inputStat,i);
+            showExtrems(inputStat,i,idx);
         }
-    public synchronized void showShort(FFTStatistic inputStat){
+    public synchronized void showShort(FFTStatistic inputStat,int idx){
         ArrayList<Extreme> list = inputStat.createExtrems(FFTStatistic.SortAbs,noFirstPoints,noLastPoints,true,set.nTrendPoints);
         if (list.size()==0){
             addToLog("Экстремумов не найдено",greatTextSize);
             return;
             }
-        addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,paintColors[colorNum]);
+        addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,getPaintColor(idx));
         }
 
     //--------------------------------------------------------------------------------------------------------
