@@ -72,6 +72,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private final int DispColor = 0x000000FF;
     private final int GraphBackColor = 0x00A0C0C0;
     final static String archiveFile="LEP500Archive.json";
+    final static double ViewProcHigh=0.6;
     //------------------------------------------------------------------------------------
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
@@ -811,7 +812,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private  I_ArchveMultiSelector procViewMultiSelector = new I_ArchveMultiSelector() {
         @Override
         public void onSelect(FileDescriptionList fd, boolean longClick) {
-            log.addView(createMultiGraph(R.layout.graphview));
+            log.addView(createMultiGraph(R.layout.graphview,ViewProcHigh));
             defferedStart();
             for (FileDescription ff : fd){
                 procArchive(ff,false);
@@ -840,7 +841,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private  I_ArchveMultiSelector procViewMultiSelectorFull = new I_ArchveMultiSelector() {
         @Override
         public void onSelect(FileDescriptionList fd, boolean longClick) {
-            log.addView(createMultiGraph(R.layout.graphview));
+            log.addView(createMultiGraph(R.layout.graphview,ViewProcHigh));
             defferedStart();
             for (FileDescription ff : fd){
                 procArchive(ff,true);

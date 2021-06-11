@@ -51,13 +51,15 @@ public abstract class BaseActivity extends AppCompatActivity {
         series.getStyle().color = color | 0xFF000000;
         graphView.addSeries(series);
         }
-    public LinearLayout createMultiGraph(int resId){
+    public LinearLayout createMultiGraph(int resId,double procHigh){
         colorNum=0;
         LinearLayout lrr=(LinearLayout)getLayoutInflater().inflate(resId, null);
         LinearLayout panel = (LinearLayout)lrr.findViewById(R.id.viewPanel);
-        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)panel.getLayoutParams();
-        params.height = (int)(getResources().getDisplayMetrics().widthPixels*0.66);
-        panel.setLayoutParams(params);
+        if (procHigh!=0){
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)panel.getLayoutParams();
+            params.height = (int)(getResources().getDisplayMetrics().widthPixels*procHigh);
+            panel.setLayoutParams(params);
+            }
         multiGraph = new LineGraphView(this,"");
         multiGraph.setScalable(true);
         multiGraph.setScrollable(true);

@@ -19,7 +19,7 @@ public class FullScreenGraph extends BaseActivity {
             LinearLayout lrr = (LinearLayout) findViewById(R.id.viewPanelHoriz);
             LinearLayout hd = (LinearLayout) findViewById(R.id.viewPanelHead);
             FileDescriptionList fd = AppData.ctx().getFileList();
-            LinearLayout graph = createMultiGraph(R.layout.graphviewhoriz);
+            LinearLayout graph = createMultiGraph(R.layout.graphviewhoriz,0);
             lrr.addView(graph);
             defferedStart();
             for (FileDescription ff : fd) {
