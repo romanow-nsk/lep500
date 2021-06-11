@@ -38,9 +38,13 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
     //--------------------------------------------------------------------------
     public int getPaintColor(int idx){
-        if (idx >= paintColors.length)
-            idx = paintColors.length-1;
-        return paintColors[idx];
+        if (idx < paintColors.length)
+            return paintColors[idx];
+        idx -= paintColors.length;
+        int color = 0x00A0A0A0;
+        while(idx--!=0 && color!=0)
+            color-=0x00202020;
+        return color;
         }
     public void paintOne(float data[], int color){
         paintOne(multiGraph,data,color,0,0,false);
@@ -80,11 +84,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
     public void defferedFinish(){
         normalize();
-        for(int i=0,j=0;i<deffered.size();i++){
+        for(int i=0;i<deffered.size();i++){
             showStatisticFull(deffered.get(i),i);
-            paintOne(multiGraph,deffered.get(i).getNormalized(),paintColors[j],0,0,true);
-            if (j<paintColors.length-1)
-                j++;
+            paintOne(multiGraph,deffered.get(i).getNormalized(),getPaintColor(i),0,0,true);
             }
         }
     public void defferedAdd(FFTStatistic inputStat){
