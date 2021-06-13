@@ -22,7 +22,6 @@ import me.romanow.lep500.fft.FFTStatistic;
 public abstract class BaseActivity extends AppCompatActivity {
     private LineGraphView multiGraph=null;
     public final static int greatTextSize=20;             // Крупный шрифт
-    public final static int KF100=FFT.sizeHZ/100;
     private final static int paintColors[]={0x0000A000,0x000000FF,0x0000A0A0,0x00C000C0};
     protected double freqStep=0;
     public abstract void clearLog();
@@ -46,10 +45,10 @@ public abstract class BaseActivity extends AppCompatActivity {
             color-=0x00202020;
         return color;
         }
-    public void paintOne(float data[], int color){
+    public void paintOne(double data[], int color){
         paintOne(multiGraph,data,color,0,0,false);
         }
-    public void paintOne(LineGraphView graphView, float data[], int color, int noFirst, int noLast, boolean freqMode){
+    public void paintOne(LineGraphView graphView, double data[], int color, int noFirst, int noLast, boolean freqMode){
         GraphView.GraphViewData zz[] = new GraphView.GraphViewData[data.length-noFirst-noLast];
         for(int j=noFirst;j<data.length-noLast;j++){                    // Подпись значений факторов j-ой ячейки
             double freq = freqMode ? (j*50./data.length) : (j/100.);
@@ -95,7 +94,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     private void normalize(){
         double max=0;
         for(FFTStatistic statistic : deffered) {
-            float max2 = statistic.normalizeStart();
+            double max2 = statistic.normalizeStart();
             if (max2 > max)
                 max = max2;
             }
@@ -136,11 +135,11 @@ public abstract class BaseActivity extends AppCompatActivity {
         //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
         //if (p_BlockSize!=1) p_BlockSize/=2;
         FFTParams params = new FFTParams().W(set.p_BlockSize* FFT.Size0).procOver(set.p_OverProc).
-                compressMode(false).winMode(set.winFun);
+                compressMode(false).winMode(set.winFun).freqHZ(set.measureFreq);
         FFT fft = new FFT();
         fft.setFFTParams(params);
         fft.calcFFTParams();
-        freqStep = fft.getStepHZLinear()/KF100;
+        freqStep = fft.getStepHZLinear();
         addToLogHide("Отсчетов "+xx.getFrameLength());
         addToLogHide("Кадр: "+set.p_BlockSize*FFT.Size0);
         addToLogHide("Перекрытие: "+set.p_OverProc);

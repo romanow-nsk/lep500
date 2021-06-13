@@ -12,12 +12,13 @@ package me.romanow.lep500.fft;
  */
 public class FFTParams {
     private int W=1024;                    // Ширина окна (отсчетов)
+    private double freqHZ=100;              // Частота оцифровки
     private int procOver=75;               // Процент перекрытия двух соседних окон
     private double  F_SCALE=3.0;           // Коэффициент перемножения спектр*гамматон
     private int winMode=FFT.WinModeRectangle; // Вид функции окна
-    private float compressGrade=0;         // Степень компрессии
+    private double compressGrade=0;         // Степень компрессии
     private boolean compressMode=false;
-    private float kAmpl=1;                 // Ампл. компрессии
+    private double kAmpl=1;                 // Ампл. компрессии
     public FFTParams procOver(int procOver0){
         procOver = procOver0;
         return this;
@@ -46,7 +47,7 @@ public class FFTParams {
         winMode = winMode0;
         return this;
         }
-    public float kAmpl(){ return kAmpl; }
+    public double kAmpl(){ return kAmpl; }
     public int winMode(){
         return winMode;
         }
@@ -54,7 +55,13 @@ public class FFTParams {
         return "Ширина окна="+W+"\nПроцент перекрытия="+procOver+
                 "\nКомпрессия "+(compressMode ? ("+\nУровень="+compressGrade+"\nАмплитуда="+kAmpl) : "-");
         }
-    public float compressGrade() {
+    public FFTParams freqHZ(double freqHZ0){
+        freqHZ = freqHZ0;
+        return this;
+        }
+    public double freqHZ(){
+        return freqHZ; }
+    public double compressGrade() {
         return compressGrade; }
     public boolean compressMode() {
         return compressMode; }

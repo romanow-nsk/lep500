@@ -26,11 +26,11 @@ public class FFTStatistic {
             }
         void smoothOne(){
             int size = data.length;
-            float out[] = new float[size];
-            out[0]=(float)( 0.5*(data[1]+data[0]));
+            double out[] = new double[size];
+            out[0]=(double)( 0.5*(data[1]+data[0]));
             for(int i=1;i<size-1;i++)
-                out[i] = (float)( 0.5*(0.5*(data[i-1]+data[i+1])+data[i]));
-            out[size-1]=(float)( 0.5*(data[size-2]+data[size-1]));
+                out[i] = (double)( 0.5*(0.5*(data[i-1]+data[i+1])+data[i]));
+            out[size-1]=(double)( 0.5*(data[size-2]+data[size-1]));
             data = out;
             }
         void smooth(int count){
@@ -45,7 +45,7 @@ public class FFTStatistic {
     private int count=0;
     private int size=0;
     private boolean noReset=true;
-    private float prev[]=null;
+    private double prev[]=null;
     private SmoothArray sumT=null;          // Сумма по времени
     private SmoothArray sum2T=null;         // Сумма квадратов по времени
     private SmoothArray sum2DiffF=null;     // Корреляция по частоте
@@ -54,7 +54,7 @@ public class FFTStatistic {
     public void reset() {
         noReset=true;
         }
-    public void lasyReset(float data[]){
+    public void lasyReset(double data[]){
         if (!noReset)
             return;
         count=0;
@@ -76,8 +76,8 @@ public class FFTStatistic {
         setObjectName(name);
         reset();
         }
-    public void addStatistic(float src[]) throws Exception{
-        float data[] = src.clone();
+    public void addStatistic(double src[]) throws Exception{
+        double data[] = src.clone();
         lasyReset(data);
         for(int i=0;i<size;i++){
             sumT.data[i]+=data[i];
@@ -96,28 +96,28 @@ public class FFTStatistic {
         return count;
         }
     //--------------- Среднее и дисперсия для массивов -------------------------
-    private float getMid(float vv[]){
-        float res=0;
+    private double getMid(double vv[]){
+        double res=0;
         for(int i=0;i<size;i++)
             res+=vv[i];
         return res/size;
         }
-    public float[] getDisps(float vv[]){
-        float out[] = vv.clone();
+    public double[] getDisps(double vv[]){
+        double out[] = vv.clone();
         for(int i=0;i<size;i++){
             if (count==0)
                 out[i]=0;
             else
-                out[i] = (float)Math.sqrt(out[i]/count);
+                out[i] = (double)Math.sqrt(out[i]/count);
             }
         return out;
         }
     //--------------------------------------------------------------------------
-    public float getDisp(){
+    public double getDisp(){
         return getMid(getDisps(sum2T.data));
         }
-    public float[] getMids(){
-        float out[] = sumT.data.clone();
+    public double[] getMids(){
+        double out[] = sumT.data.clone();
         for(int i=0;i<size;i++){
             if (count==0)
                 out[i]=0;
@@ -126,48 +126,48 @@ public class FFTStatistic {
             }
         return out;
         }
-    public float normalizeStart(){
+    public double normalizeStart(){
         if (count==0) return 0;
         normalized = new SmoothArray(size);
         for(int i=0;i<normalized.data.length;i++)
             normalized.data[i]=sumT.data[i]/count;
         double max=normalized.data[0];
-        for(float vv : normalized.data)
+        for(double vv : normalized.data)
             if (vv > max)
                 max = vv;
-        return (float) max;
+        return (double) max;
         }
-    public void normalizelFinish(float max){
+    public void normalizelFinish(double max){
         for(int i=0;i<normalized.data.length;i++)
             normalized.data[i]/=max;
         }
-    public float normalizeMax(){
+    public double normalizeMax(){
         if (count==0) return 0;
         double max=sumT.data[0];
-        for(float vv : sumT.data)
+        for(double vv : sumT.data)
             if (vv > max)
                 max = vv;
-        return (float) max/count;
+        return (double) max/count;
         }
-    public float getMid(){
+    public double getMid(){
         return getMid(getMids());
         }
-    public float[] getDisps(){
+    public double[] getDisps(){
         return getDisps(sum2T.data);
         }
-    public float[] getDiffsF(){
+    public double[] getDiffsF(){
         return getDisps(sum2DiffF.data);
         }
-    public float getDiffF(){
+    public double getDiffF(){
         return getMid(getDiffsF());
         }
-    public float[] getDiffsT(){
+    public double[] getDiffsT(){
         return getDisps(sum2DiffT.data);
         }
-    public float getDiffT(){
+    public double getDiffT(){
         return getMid(getDiffsT());
         }
-    public float[] getNormalized() { return normalized.data; }
+    public double[] getNormalized() { return normalized.data; }
 
     private void sort(ArrayList<Extreme> list, Comparator<Extreme> comparator){
         int sz = list.size();
@@ -210,8 +210,8 @@ public class FFTStatistic {
         }
     public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, boolean ownSort, int trendPointsNum){
         ArrayList<Extreme> out = new ArrayList<>();
-        float data[] = normalized.getOriginal();
-        float trend[] = Utils.calcTrend(data,trendPointsNum);
+        double data[] = normalized.getOriginal();
+        double trend[] = Utils.calcTrend(data,trendPointsNum);
         for(int i=nFirst+1;i<size-1-nLast;i++)
             if (data[i]>data[i-1] && data[i]>data[i+1]){
                 int k1,k2;
@@ -220,7 +220,7 @@ public class FFTStatistic {
                 double d1 = data[i]-data[k1];
                 double d2 = data[i]-data[k2];
                 double diff = Math.sqrt((d1*d1+d2*d2)/2);
-                out.add(new Extreme(data[i]/count,i,i* FFT.sizeHZ/2/size,diff/count,(data[i]-trend[i])/count));
+                out.add(new Extreme(data[i]/count,i,diff/count,(data[i]-trend[i])/count));
                 }
         sort(out,comparatorList[mode]);
         return out;
@@ -240,7 +240,7 @@ public class FFTStatistic {
         }
     //------------------- Коррекция экспоненты--------------------------
     public double correctExp(int nPoints){
-        float a0=sumT.data[0];
+        double a0=sumT.data[0];
         double k=0;
         for(int i=0;i<nPoints;i++)
             k += -Math.log(sumT.data[i+1]/sumT.data[i]);

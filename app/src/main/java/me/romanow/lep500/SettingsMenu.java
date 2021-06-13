@@ -183,6 +183,17 @@ public class SettingsMenu {
                 }
             });
             trmain.addView(layout);
+            layout = createItem("Частота изм.", ""+base.set.measureFreq, new I_EventListener(){
+                @Override
+                public void onEvent(String ss) {
+                    try {
+                        base.set.measureFreq=Double.parseDouble(ss);
+                        settingsChanged();
+                    } catch (Exception ee){
+                        base.popupInfo("Формат числа");}
+                }
+            });
+            trmain.addView(layout);
             layout = createListBox("Окно БПФ", FFT.winFuncList, base.set.winFun, new I_ListBoxListener() {
                 @Override
                 public void onSelect(int index) {

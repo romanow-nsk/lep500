@@ -21,7 +21,7 @@ import java.io.OutputStream;
 public class FFTAudioTextFile implements FFTFileSource{
     protected String fspec=null;
     protected int sz=0;
-    protected float data[]=null;
+    protected double data[]=null;
     protected int nPoints=0;             // Количество точек для удаления тренда
     //--------------------------------------------------------------------------------------
     private transient int cnum;
@@ -60,7 +60,7 @@ public class FFTAudioTextFile implements FFTFileSource{
             wav_file.write((byte)cc[i]);
             }
         }
-    public float[]  getData(){
+    public double[]  getData(){
         return data.clone();
         }
     public void readData(BufferedReader AudioFile) throws IOException {
@@ -68,8 +68,8 @@ public class FFTAudioTextFile implements FFTFileSource{
         for(int i=0;i<10;i++)           // 10 первых строк пропустить
             in = AudioFile.readLine();
         sz = Integer.parseInt(AudioFile.readLine());
-        data = new float[sz];
-        float mid=0,min=data[0],max=data[0];
+        data = new double[sz];
+        double mid=0,min=data[0],max=data[0];
         for(int i=0;i<sz;i++){
             data[i]=Integer.parseInt(AudioFile.readLine());
             mid += data[i];
@@ -132,7 +132,7 @@ public class FFTAudioTextFile implements FFTFileSource{
                 }   
             wav_file.flush();
             wav_file.close();
-            back.onMessage("Записано "+num_samples+" сэмплов, "+ ((float)num_samples)/sample_rate+ " сек");
+            back.onMessage("Записано "+num_samples+" сэмплов, "+ ((double)num_samples)/sample_rate+ " сек");
             fspec = PatnToFile;
             close();
             return true;
@@ -184,7 +184,7 @@ public class FFTAudioTextFile implements FFTFileSource{
         return sz;
         }
     @Override
-    public int read(float[] buf, int offset, int lnt) throws IOException {
+    public int read(double[] buf, int offset, int lnt) throws IOException {
         if (sz==0)
             return 0;
         int cnt=0;
@@ -219,7 +219,7 @@ public class FFTAudioTextFile implements FFTFileSource{
     public void removeTrend(int nPoints){
         if (nPoints==0)
             return;
-        float middles[] = new float[data.length];
+        double middles[] = new double[data.length];
         for(int i=0;i<data.length;i++){
             middles[i]=0;
             for(int j=i-nPoints;j<=i+nPoints;j++){

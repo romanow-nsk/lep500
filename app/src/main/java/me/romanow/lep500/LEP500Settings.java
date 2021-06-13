@@ -20,6 +20,7 @@ public class LEP500Settings {
     public String measureTitle="Опора 125";    // Подпись опоры
     public int measureCounter=1;               // Счетчик измерения
     public boolean fullInfo=false;
+    public double measureFreq=102.8;            // Частота измерений
     public String mailToSend="romanow@ngs.ru";
     //----------------- Для javax.mail -------------------------------------------
     public transient String mailHost="mail.nstu.ru";

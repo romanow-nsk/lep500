@@ -10,11 +10,11 @@ package me.romanow.lep500.fft;
 import me.romanow.lep500.Utils;
 
 public class FFTArray {
-    protected float data[]=new float[0];
-    private float diff[]=new float[0];
-    private float max=0;
+    protected double data[]=new double[0];
+    private double diff[]=new double[0];
+    private double max=0;
     private int count=0;
-    private float delta=0.95F;
+    private double delta=0.95F;
     public int size(){
         return data.length;
         }
@@ -26,10 +26,10 @@ public class FFTArray {
             diff[i]=0;
             }
         }
-    public float getSumDiff(int i){
+    public double getSumDiff(int i){
         if (count==0)
             return 0;
-        return (float)(Math.sqrt(diff[i])/count);
+        return (double)(Math.sqrt(diff[i])/count);
         }
     public int getCount(){
         return count;
@@ -39,22 +39,22 @@ public class FFTArray {
         count++;
         }
     public FFTArray(int size){
-        data = new float[size];
-        diff = new float[size];
+        data = new double[size];
+        diff = new double[size];
         clear();
         }
     public void clearMax(){
         max=0;
         }
-    public float getMax(){
+    public double getMax(){
         return max;
         }
-    public float get(int i){
+    public double get(int i){
         if (i<0 || i>=data.length)
             return 0;
         return data[i];
         }
-    public void set(int i, float value){
+    public void set(int i, double value){
         if (i<0 || i>=data.length)
             return;
         diff[i] += Math.abs(data[i]-value);
@@ -73,7 +73,7 @@ public class FFTArray {
                 max = data[i];
             }
         }
-    public void normalize(float k){
+    public void normalize(double k){
         for (int i=0;i<data.length;i++)
             data[i] *= k;
         }    
@@ -81,21 +81,21 @@ public class FFTArray {
         for (int i=0;i<data.length;i++)
             data[i]/= max;
         }    
-    public float []getNormalized(float k){
-        float out[] = (float[])data.clone();
+    public double []getNormalized(double k){
+        double out[] = (double[])data.clone();
         for (int i=0;i<data.length;i++)
             out[i] *= k;
         return out;
         }
-    public float []getNormalized(){
-        float out[] = (float[])data.clone();
+    public double []getNormalized(){
+        double out[] = (double[])data.clone();
         if (max==0)
             return out;
         for (int i=0;i<data.length;i++)
             out[i] /=max;
         return out;
         }
-    public void compress(boolean compressMode, float compressGrade,float k){
+    public void compress(boolean compressMode, double compressGrade,double k){
         normalize(k);
         if (!compressMode)
             return;
@@ -103,16 +103,16 @@ public class FFTArray {
             data[i] = 1- Utils.getExp(compressGrade*data[i]/max);
             }
         }
-    public float []getCompressed(boolean compressMode, float compressGrade, float k){
+    public double []getCompressed(boolean compressMode, double compressGrade, double k){
         if (!compressMode)
             return getNormalized();
-        float out[] = getNormalized(k);
+        double out[] = getNormalized(k);
         for(int i=0;i<out.length;i++){
             out[i] = 1-Utils.getExp(compressGrade*out[i]/max);
             }
         return out;
         }
-    public float []getOriginal(){
-        return (float[])data.clone();
+    public double []getOriginal(){
+        return data.clone();
         }
 }

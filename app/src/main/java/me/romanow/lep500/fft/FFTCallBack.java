@@ -11,7 +11,7 @@ package me.romanow.lep500.fft;
  * @author romanow
  */
 public interface FFTCallBack extends I_Notify {
-    public void onStart(float stepMS);
+    public void onStart(double stepMS);
     public void onFinish();
-    public boolean onStep(int nBlock, int calcMS, float totalMS, FFT fft);
+    public boolean onStep(int nBlock, int calcMS, double totalMS, FFT fft);
     }

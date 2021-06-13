@@ -13,16 +13,15 @@ import me.romanow.lep500.Utils;
 
 public class FFT {
     public final static int  Size0= 1024;           // 1024 базовая степень FFT
-    public final static int sizeHZ = 44100;         // Частотный диапазон оцифровки
-    private float stepHZLinear;                     // Шаг лин.спектра
-    private float totalMS=0;                        // Текущий момент времени
-    private float stepMS;                           // Сдвиг окна (мс)
+    private double stepHZLinear;                     // Шаг лин.спектра
+    private double totalMS=0;                        // Текущий момент времени
+    private double stepMS;                           // Сдвиг окна (мс)
     private boolean preloadMode=false;              // Режим предварительной загрузки
     private int nblock=0;
     private FFTParams pars = new FFTParams();       //
-    private float wave[]=null;                      // Текущая волна
+    private double wave[]=null;                      // Текущая волна
     private FFTArray spectrum=null;                 // Текущий спектр
-    private float fullWave[]=null;                  // preload волна
+    private double fullWave[]=null;                  // preload волна
     private FFTAudioSource audioInputStream=null;
     private Complex[] complexSpectrum=null;
     private FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
@@ -39,7 +38,7 @@ public class FFT {
         winFuncList.add("Парабола");
         }
     //-------------------------------------------------------------------------------------------
-    public float[] getSpectrum() {
+    public double[] getSpectrum() {
         return spectrum.getOriginal(); }
     //------------------------------ Функция окна -----------------------------
     private double winFun(double val, int idx){
@@ -55,7 +54,7 @@ public class FFT {
         }
     //--------------------------------------------------------------------------
     private TimeCounter tc =
-            new TimeCounter(new String[]{"Чтение","БПФ","Компрессия","log-шкала","Гамматон","Модель","Визуализация","Общее"});
+            new TimeCounter(new String[]{"Чтение","БПФ","Компрессия","Общее"});
     public TimeCounter getTimeCounter() {
         return tc; }
     public void addCount(int idx){
@@ -66,12 +65,12 @@ public class FFT {
         calcFFTParams();
         }
     public void calcFFTParams(){
-        stepHZLinear = ((float)sizeHZ)/pars.W();
-        stepMS = 10*pars.W()*(100-pars.procOver())/sizeHZ;
+        stepHZLinear = pars.freqHZ()/pars.W();
+        stepMS = 10*pars.W()*(100-pars.procOver())/pars.freqHZ();
         totalMS=0;
         Utils.calcExp();
         }
-    public float getStepHZLinear() {
+    public double getStepHZLinear() {
         return stepHZLinear;
         }
     public int getAudioLength(FFTAudioSource audioInputStream, FFTCallBack back){
@@ -90,7 +89,7 @@ public class FFT {
         int size = getAudioLength(audioInputStream, back);
         if (size == -1)
             return false;
-        fullWave = new float[size];
+        fullWave = new double[size];
         try {
             audioInputStream.read(fullWave, 0, size);
            } catch(IOException ee){
@@ -106,7 +105,7 @@ public class FFT {
         preloadMode=false;
         tc.clear();
         back.onStart(stepMS);
-        wave = new float[pars.W()];
+        wave = new double[pars.W()];
         spectrum = new FFTArray(wave.length/2);
         nblock=0;
         int nQuant = pars.W()*(100-pars.procOver())/100;
@@ -126,15 +125,13 @@ public class FFT {
                 tc.addCount(1);
                 spectrum.compress(pars.compressMode(), pars.compressGrade(),pars.kAmpl());
                 tc.addCount(2);
-                tc.addCount(3);
-                tc.addCount(4);
                 //spectrum.nextStep();
                 //GTSpectrum.nextStep();
                 boolean bb = back.onStep(nblock, tc.getTotal(), totalMS, this);
                 nblock++;
                 if (!bb)
                     break;
-                tc.addCountTotal(7);
+                tc.addCountTotal(3);
                 totalMS += stepMS;
             }
             back.onMessage("Блоков "+nblock);

@@ -14,7 +14,7 @@ public class FFTAdapter implements FFTCallBack {
         main = main0;
         }
     @Override
-    public void onStart(float msOnStep) {}
+    public void onStart(double msOnStep) {}
     @Override
     public void onFinish() {
         if (inputStat.getCount()==0){
@@ -25,9 +25,9 @@ public class FFTAdapter implements FFTCallBack {
         main.defferedAdd(inputStat);
         }
     @Override
-    public boolean onStep(int nBlock, int calcMS, float totalMS, FFT fft) {
+    public boolean onStep(int nBlock, int calcMS, double totalMS, FFT fft) {
         long tt = System.currentTimeMillis();
-        float lineSpectrum[] = fft.getSpectrum();
+        double lineSpectrum[] = fft.getSpectrum();
         boolean xx;
         try {
             inputStat.addStatistic(lineSpectrum);
