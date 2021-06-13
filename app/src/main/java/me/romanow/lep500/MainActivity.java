@@ -437,28 +437,32 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         }
     private void showExtrems(FFTStatistic inputStat, int mode, int idx){
         int sz = inputStat.getMids().length;
-        addToLog(String.format("Диапазон экстремумов: %6.4f-%6.4f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
+        addToLog(String.format("Диапазон экстремумов: %6.3f-%6.3f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
         ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true,set.nTrendPoints);
         if (list.size()==0){
             addToLog("Экстремумов не найдено");
             return;
             }
         if (mode == FFTStatistic.SortAbs)
-            addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,getPaintColor(idx));
+            addToLog(false,String.format("Осн. частота=%6.3f гц D=%6.3f",list.get(0).idx*freqStep,
+                    Math.PI*list.get(0).decSize/list.get(0).idx)
+                    ,greatTextSize,getPaintColor(idx));
         int count = nFirstMax < list.size() ? nFirstMax : list.size();
         ExtremeFacade facade = createFacade(list.get(0),mode);
         double val0 = facade.getValue();
         addToLog(facade.getTitle());
         Extreme extreme = facade.extreme();
-        addToLog("Ампл     Пик(абс) Пик(отн) Частота(гц)");
-        addToLog(String.format("%6.4f   %6.4f    %6.4f      %6.4f",extreme.value,extreme.diff,extreme.trend,extreme.idx*freqStep));
+        addToLog("Ампл     \u0394спад  \u0394тренд   f(гц)     Декремент");
+        addToLog(String.format("%6.3f   %6.3f    %6.3f      %6.3f    %6.3f",extreme.value,extreme.diff,extreme.trend,
+                extreme.idx*freqStep, Math.PI*extreme.decSize/extreme.idx));
         double sum=0;
         for(int i=1; i<count;i++){
             facade = createFacade(list.get(i),mode);
             double proc = facade.getValue()*100/val0;
             sum+=proc;
             extreme = facade.extreme();
-            addToLog(String.format("%6.4f   %6.4f    %6.4f      %6.4f",extreme.value,extreme.diff,extreme.trend,extreme.idx*freqStep));
+            addToLog(String.format("%6.3f   %6.3f    %6.3f      %6.3f    %6.3f",extreme.value,extreme.diff,extreme.trend,
+                    extreme.idx*freqStep,Math.PI*extreme.decSize/extreme.idx));
             }
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
@@ -473,7 +477,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             addToLog("Экстремумов не найдено",greatTextSize);
             return;
             }
-        addToLog(false,String.format("Основная частота=%6.4f гц",list.get(0).idx*freqStep),greatTextSize,getPaintColor(idx));
+        addToLog(false,String.format("Основная частота=%6.3f гц",list.get(0).idx*freqStep),greatTextSize,getPaintColor(idx));
         }
 
     //--------------------------------------------------------------------------------------------------------
@@ -648,6 +652,13 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                             }
                         }
                     });
+                }
+            });
+        menuList.add(new MenuItemAction("Отменить измерение") {
+            @Override
+            public void onSelect() {
+                for(BTReceiver receiver : btViewFace.sensorList)
+                    receiver.stopMeasure();
                 }
             });
         menuList.add(new MenuItemAction("Настройки") {
