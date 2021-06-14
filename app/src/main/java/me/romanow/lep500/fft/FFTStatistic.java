@@ -217,12 +217,15 @@ public class FFTStatistic {
                 int k1,k2,k3,k4;
                 for(k1=i;k1>0 && data[k1]>data[k1-1];k1--);
                 for(k2=i;k2<data.length-1 && data[k2]>data[k2+1];k2++);
-                for(k3=i;k3>0 && data[k1]>data[i]/2;k3--);
-                for(k4=i;k4<data.length-1 && data[k1]>data[i]/2;k4++);
+                for(k3=i;k3>=0 && data[k3]>data[i]/2;k3--);
+                for(k4=i;k4<data.length && data[k4]>data[i]/2;k4++);
                 double d1 = data[i]-data[k1];
                 double d2 = data[i]-data[k2];
                 double diff = Math.sqrt((d1*d1+d2*d2)/2);
-                out.add(new Extreme(data[i]/count,i,diff/count,(data[i]-trend[i])/count,k4-k3));
+                int decrem=k4-k3;
+                if (k3<k1 || k4>k2)
+                    decrem = -1;
+                out.add(new Extreme(data[i]/count,i,diff/count,(data[i]-trend[i])/count,decrem));
                 }
         sort(out,comparatorList[mode]);
         return out;

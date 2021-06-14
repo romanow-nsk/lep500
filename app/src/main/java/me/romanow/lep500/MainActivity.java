@@ -443,26 +443,29 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             addToLog("Экстремумов не найдено");
             return;
             }
-        if (mode == FFTStatistic.SortAbs)
-            addToLog(false,String.format("Осн. частота=%6.3f гц D=%6.3f",list.get(0).idx*freqStep,
-                    Math.PI*list.get(0).decSize/list.get(0).idx)
+        Extreme extreme;
+        if (mode == FFTStatistic.SortAbs){
+            extreme = list.get(0);
+            addToLog(false,String.format("Осн. частота=%6.3f гц "+(extreme.decSize==-1 ? "" : "D=%6.3f"),
+                    extreme.idx*freqStep, Math.PI*extreme.decSize/extreme.idx)
                     ,greatTextSize,getPaintColor(idx));
+            }
         int count = nFirstMax < list.size() ? nFirstMax : list.size();
         ExtremeFacade facade = createFacade(list.get(0),mode);
         double val0 = facade.getValue();
         addToLog(facade.getTitle());
-        Extreme extreme = facade.extreme();
+        extreme = facade.extreme();
         addToLog("Ампл     \u0394спад  \u0394тренд   f(гц)     Декремент");
-        addToLog(String.format("%6.3f   %6.3f    %6.3f      %6.3f    %6.3f",extreme.value,extreme.diff,extreme.trend,
-                extreme.idx*freqStep, Math.PI*extreme.decSize/extreme.idx));
+        addToLog(String.format("%6.3f   %6.3f    %6.3f    %6.3f"+(extreme.decSize==-1 ?"":"      %6.3f"),extreme.value,extreme.diff,extreme.trend,
+                    extreme.idx*freqStep, Math.PI*extreme.decSize/extreme.idx));
         double sum=0;
         for(int i=1; i<count;i++){
             facade = createFacade(list.get(i),mode);
             double proc = facade.getValue()*100/val0;
             sum+=proc;
             extreme = facade.extreme();
-            addToLog(String.format("%6.3f   %6.3f    %6.3f      %6.3f    %6.3f",extreme.value,extreme.diff,extreme.trend,
-                    extreme.idx*freqStep,Math.PI*extreme.decSize/extreme.idx));
+            addToLog(String.format("%6.3f   %6.3f    %6.3f    %6.3f"+(extreme.decSize==-1 ?"":"      %6.3f"),extreme.value,extreme.diff,extreme.trend,
+                    extreme.idx*freqStep, Math.PI*extreme.decSize/extreme.idx));
             }
         addToLog(String.format("Средний - %d%% к первому",(int)(sum/(count-1))));
         }
