@@ -43,6 +43,8 @@ public class BTViewFace {
     public final static int BT_LightRed=4;
     public final static int BT_LightGreen=5;
     public ArrayList<BTReceiver> sensorList = new ArrayList<>();
+    private final static int BTScanID[]={R.drawable.scan_gray,R.drawable.scan_red,R.drawable.scan_yellow,
+            R.drawable.scan_green,R.drawable.scan_gray,R.drawable.scan_gray};
     private final static int BTStateID[]={R.drawable.status_gray,R.drawable.status_red,R.drawable.status_yellow,
             R.drawable.status_green,R.drawable.status_light_red,R.drawable.status_light_green};
     public BTViewFace(MainActivity face) {
@@ -54,6 +56,7 @@ public class BTViewFace {
         BTState[2] = (ImageView) face.findViewById(R.id.headerState2);
         BTState[3] = (ImageView) face.findViewById(R.id.headerState3);
         BTScanerState  = (ImageView) face.findViewById(R.id.headerScanerState);
+        BTScanerState.setImageResource(R.drawable.scan_gray);
         BTScanerState.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -105,7 +108,7 @@ public class BTViewFace {
         }
     }
     private void setBTScanerState(int state){
-        BTScanerState.setImageResource(BTStateID[state]);
+        BTScanerState.setImageResource(BTScanID[state]);
         }
     private void setBTPopup(BTReceiver receiver,String text){
         int idx = sensorList.indexOf(receiver);
