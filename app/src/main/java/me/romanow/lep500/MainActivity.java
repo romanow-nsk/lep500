@@ -176,10 +176,14 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         btViewFace.init();
         //------------------------------------------------
         int[] surrogates = {0xD83D, 0xDC7D};
-        String title = "Звенящие опоры России "+
-                new String(Character.toChars(0x1F349))+
-                new String(surrogates, 0, surrogates.length)+
-                "\uD83D\uDC7D";
+        //String title = "Звенящие опоры России "+
+        //        new String(Character.toChars(0x1F349))+
+        //        new String(surrogates, 0, surrogates.length)+
+        //        "\uD83D\uDC7D";
+        String title ="\"Звенящие\" опоры России\nверсия "+ AppData.apkVersion;
+                //new String(Character.toChars(0x1F349))+
+                //new String(surrogates, 0, surrogates.length)+
+                //"\uD83D\uDC7D";
         addToLog(title,20);
         }
     public void clearLog(){
