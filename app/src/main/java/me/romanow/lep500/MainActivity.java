@@ -180,11 +180,8 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         //        new String(Character.toChars(0x1F349))+
         //        new String(surrogates, 0, surrogates.length)+
         //        "\uD83D\uDC7D";
-        String title ="\"Звенящие\" опоры России\nверсия "+ AppData.apkVersion;
-                //new String(Character.toChars(0x1F349))+
-                //new String(surrogates, 0, surrogates.length)+
-                //"\uD83D\uDC7D";
-        addToLog(title,20);
+        String title = "Звенящие опоры России ";
+        addToLog(title,18);
         }
     public void clearLog(){
         log.removeAllViews();
@@ -752,6 +749,16 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
                 BTReceiver receiver = new BTReceiver(btViewFace,btViewFace.BTBack);
                 receiver.startMeasure(file2,true);
+                }
+            });
+        menuList.add(new MenuItemAction("О программе") {
+            @Override
+            public void onSelect() {
+                String title ="Мобильный клиент \"Опоры России\", версия "+ AppData.apkVersion+"\n";
+                title+="анализатора  спектра частот  конструкций  башенного типа «ЛЭПтон»\n";
+                title+="ООО \"Институт электроэнергетики НГТУ\",\n";
+                title+="Контакты: rodenko@mail.ru";
+                addToLog(title,18);
                 }
             });
         menuList.add(new MenuItemAction("Выход") {
