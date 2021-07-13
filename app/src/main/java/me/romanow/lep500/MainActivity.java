@@ -757,6 +757,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 receiver.startMeasure(file2,true);
                 }
             });
+        if (set.fullInfo){
         menuList.add(new MenuItemAction("Тестовый сигнал") {
             @Override
             public void onSelect() {
@@ -782,6 +783,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 paintOne(multiGraph,deffered.get(0).getNormalized(),getPaintColor(0),0,0,true);
                 }
             });
+        }
         menuList.add(new MenuItemAction("О программе") {
             @Override
             public void onSelect() {
