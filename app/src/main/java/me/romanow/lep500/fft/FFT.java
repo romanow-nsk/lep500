@@ -30,13 +30,6 @@ public class FFT {
     public final static int WinModeTriangle=1;      // Треугольное окно
     public final static int WinModeSine=2;          // Синусное окно
     public final static int WinModeWelch=3;         // Параболическое окно
-    public final static ArrayList<String> winFuncList=new ArrayList<>();
-        {
-        winFuncList.add("Прямоугольник");
-        winFuncList.add("Треугольник");
-        winFuncList.add("Синус");
-        winFuncList.add("Парабола");
-        }
     //-------------------------------------------------------------------------------------------
     public double[] getSpectrum() {
         return spectrum.getOriginal(); }

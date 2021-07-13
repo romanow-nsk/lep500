@@ -135,7 +135,7 @@ public class FFTStatistic {
         for(double vv : normalized.data)
             if (vv > max)
                 max = vv;
-        return (double) max;
+        return max;
         }
     public void normalizelFinish(double max){
         for(int i=0;i<normalized.data.length;i++)
@@ -206,9 +206,9 @@ public class FFTStatistic {
     };
 
     public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, int trendPointsNum){
-        return createExtrems(mode, nFirst, nLast,false,trendPointsNum);
+        return createExtrems(mode, nFirst, nLast,false,trendPointsNum,1);
         }
-    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, boolean ownSort, int trendPointsNum){
+    public ArrayList<Extreme> createExtrems(int mode, int nFirst, int nLast, boolean ownSort, int trendPointsNum,int nMid){
         ArrayList<Extreme> out = new ArrayList<>();
         double data[] = normalized.getOriginal();
         double trend[] = Utils.calcTrend(data,trendPointsNum);
@@ -225,7 +225,14 @@ public class FFTStatistic {
                 int decrem=k4-k3;
                 if (k3<k1 || k4>k2)
                     decrem = -1;
-                out.add(new Extreme(data[i]/count,i,diff/count,(data[i]-trend[i])/count,decrem));
+                double dd = 0;
+                for(int j=i-nMid;j<=i+nMid;j++){
+                    if (j<0 || j>=data.length)
+                        dd+=data[i];
+                    else
+                        dd+=data[j];
+                    }
+                out.add(new Extreme(dd/(2*nMid+1),i,diff,(data[i]-trend[i]),decrem));
                 }
         sort(out,comparatorList[mode]);
         return out;

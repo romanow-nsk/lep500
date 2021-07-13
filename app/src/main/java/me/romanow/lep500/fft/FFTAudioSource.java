@@ -16,10 +16,5 @@ public interface FFTAudioSource {
     public long getFrameLength();
     public int read(double buf[], int offset, int lnt) throws IOException;
     public void close() throws IOException;
-    public void enableToPlay(boolean play);
-    public void play(int start, int delay);
-    public void pause();
-    public boolean isPlaying();
-    public int getCurrentPlayTimeMS();
-    public int getSampleRate();
+    public double getSampleRate();
 }

@@ -29,22 +29,6 @@ public class FFTAudioTextFile implements FFTFileSource{
     //---------------------------------------------------------------------------------------
     public void setnPoints(int nPoints) {
         this.nPoints = nPoints; }
-    @Override
-    public void enableToPlay(boolean play) {}
-    @Override
-    public boolean isPlaying(){
-        return false;
-        }
-    @Override
-    public int getCurrentPlayTimeMS(){
-        return 0;
-        }
-    @Override
-    public void play(int start, int delay) {
-        }
-    @Override
-    public void pause() {
-        }
     public void write_little_endian(int word, int num_bytes, OutputStream wav_file) throws IOException{
         int buf;
         while(num_bytes>0){   
@@ -213,7 +197,7 @@ public class FFTAudioTextFile implements FFTFileSource{
         }
 
     @Override
-    public int getSampleRate() {
+    public double getSampleRate() {
         return 44100;
         }
     public void removeTrend(int nPoints){

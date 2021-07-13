@@ -31,10 +31,10 @@ public class FFTAdapter implements FFTCallBack {
         boolean xx;
         try {
             inputStat.addStatistic(lineSpectrum);
-        } catch (Exception ex) {
-            main.addToLog(createFatalMessage(ex,10));
-            return false;
-        }
+            } catch (Exception ex) {
+                main.addToLog(createFatalMessage(ex,10));
+                return false;
+                }
         return true;
     }
     @Override

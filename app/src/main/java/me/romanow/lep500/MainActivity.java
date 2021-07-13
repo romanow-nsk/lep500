@@ -52,8 +52,11 @@ import me.romanow.lep500.fft.ExtremeFacade;
 import me.romanow.lep500.fft.ExtremeNull;
 import me.romanow.lep500.fft.ExtremeTrend;
 import me.romanow.lep500.fft.FFT;
+import me.romanow.lep500.fft.FFTAudioSource;
 import me.romanow.lep500.fft.FFTAudioTextFile;
+import me.romanow.lep500.fft.FFTParams;
 import me.romanow.lep500.fft.FFTStatistic;
+import me.romanow.lep500.fft.FFTHarmonic;
 
 public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
@@ -136,7 +139,6 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
 
             new FFT();                          // статические данные
-            createMenuList();
             guiThead = Thread.currentThread();
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             setContentView(R.layout.activity_main);
@@ -146,7 +148,10 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             log = (LinearLayout) findViewById(R.id.log);
             scroll = (ScrollView)findViewById(R.id.scroll);
             loadSettings();
-            } catch (Exception ee){ addToLog(createFatalMessage(ee,10));}
+            createMenuList();
+            } catch (Exception ee){
+                addToLog(createFatalMessage(ee,10));
+                }
         // Регистрируем BroadcastReceiver
         IntentFilter filter=new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(blueToothReceiver, filter);// Не забудьте снять регистрацию в onDestroy
@@ -439,7 +444,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private void showExtrems(FFTStatistic inputStat, int mode, int idx){
         int sz = inputStat.getMids().length;
         addToLog(String.format("Диапазон экстремумов: %6.3f-%6.3f",50./sz*noFirstPoints,50./sz*(sz-noLastPoints)));
-        ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true,set.nTrendPoints);
+        ArrayList<Extreme> list = inputStat.createExtrems(mode,noFirstPoints,noLastPoints,true,set.nTrendPoints,0);
         if (list.size()==0){
             addToLog("Экстремумов не найдено");
             return;
@@ -476,7 +481,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             showExtrems(inputStat,i,idx);
         }
     public synchronized void showShort(FFTStatistic inputStat,int idx){
-        ArrayList<Extreme> list = inputStat.createExtrems(FFTStatistic.SortAbs,noFirstPoints,noLastPoints,true,set.nTrendPoints);
+        ArrayList<Extreme> list = inputStat.createExtrems(FFTStatistic.SortAbs,noFirstPoints,noLastPoints,true,set.nTrendPoints,0);
         if (list.size()==0){
             addToLog("Экстремумов не найдено",greatTextSize);
             return;
@@ -598,6 +603,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         menuList.get(index).onSelect();
         }
     public void createMenuList(){
+        menuList.clear();
         menuList.add(new MenuItemAction("Архив") {
             @Override
             public void onSelect() {
@@ -749,6 +755,31 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
                 BTReceiver receiver = new BTReceiver(btViewFace,btViewFace.BTBack);
                 receiver.startMeasure(file2,true);
+                }
+            });
+        menuList.add(new MenuItemAction("Тестовый сигнал") {
+            @Override
+            public void onSelect() {
+                calcFirstLastPoints();
+                log.addView(createMultiGraph(R.layout.graphview,ViewProcHigh));
+                defferedStart();
+                FFTParams params = new FFTParams().W(set.p_BlockSize* FFT.Size0).procOver(set.p_OverProc).
+                        compressMode(false).winMode(set.winFun).freqHZ(set.measureFreq);
+                FFT fft = new FFT();
+                fft.setFFTParams(params);
+                fft.calcFFTParams();
+                freqStep = fft.getStepHZLinear();
+                double hz[]={3,5,8,13,21,34,48};
+                double ampl[]={1,1,1,1,1,1,1};
+                FFTAudioSource source = new FFTHarmonic(set.measureFreq,hz,ampl,set.measureDuration,0.1);
+                addToLogHide("Отсчетов: "+source.getFrameLength());
+                addToLogHide("Кадр: "+set.p_BlockSize*FFT.Size0);
+                addToLogHide("Перекрытие: "+set.p_OverProc);
+                addToLogHide("Дискретность: "+String.format("%5.4f",freqStep)+" гц");
+                fft.fftDirect(source,new FFTAdapter(MainActivity.this,title));
+                normalize();
+                showStatistic(deffered.get(0),0);
+                paintOne(multiGraph,deffered.get(0).getNormalized(),getPaintColor(0),0,0,true);
                 }
             });
         menuList.add(new MenuItemAction("О программе") {

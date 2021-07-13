@@ -103,7 +103,7 @@ public class ListBoxDialog {
                         myDlg.cancel();
                         return false;
         				}
-                              });
+                                  });
                 trmain.addView(xx);
                 }
              myDlg.setView(lrr);

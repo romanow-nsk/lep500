@@ -20,7 +20,7 @@ import me.romanow.lep500.fft.FFTParams;
 import me.romanow.lep500.fft.FFTStatistic;
 
 public abstract class BaseActivity extends AppCompatActivity {
-    private LineGraphView multiGraph=null;
+    protected LineGraphView multiGraph=null;
     public final static int greatTextSize=20;             // Крупный шрифт
     private final static int paintColors[]={0x0000A000,0x000000FF,0x0000A0A0,0x00C000C0};
     protected double freqStep=0;
@@ -77,7 +77,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         return multiGraph;
         }
     //--------- Отложенная отрисовка с нормализацией --------------------------------------------------
-    private ArrayList<FFTStatistic> deffered = new ArrayList<>();
+    protected ArrayList<FFTStatistic> deffered = new ArrayList<>();
     public void defferedStart(){
         deffered.clear();
         }
@@ -91,7 +91,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public void defferedAdd(FFTStatistic inputStat){
         deffered.add(inputStat);
         }
-    private void normalize(){
+    protected void normalize(){
         double max=0;
         for(FFTStatistic statistic : deffered) {
             double max2 = statistic.normalizeStart();
@@ -140,7 +140,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         fft.setFFTParams(params);
         fft.calcFFTParams();
         freqStep = fft.getStepHZLinear();
-        addToLogHide("Отсчетов "+xx.getFrameLength());
+        addToLogHide("Отсчетов: "+xx.getFrameLength());
         addToLogHide("Кадр: "+set.p_BlockSize*FFT.Size0);
         addToLogHide("Перекрытие: "+set.p_OverProc);
         addToLogHide("Дискретность: "+String.format("%5.4f",freqStep)+" гц");

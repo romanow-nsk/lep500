@@ -194,7 +194,7 @@ public class SettingsMenu {
                 }
             });
             trmain.addView(layout);
-            layout = createListBox("Окно БПФ", FFT.winFuncList, base.set.winFun, new I_ListBoxListener() {
+            layout = createListBox("Окно БПФ", AppData.winFuncList, base.set.winFun, new I_ListBoxListener() {
                 @Override
                 public void onSelect(int index) {
                     base.set.winFun = index;
@@ -237,7 +237,7 @@ public class SettingsMenu {
                     }
                 });
             trmain.addView(layout);
-            layout = createItem("Данные отладки", base.set.fullInfo ? "1" : "0" , new I_EventListener(){
+            layout = createItem("Отладка", base.set.fullInfo ? "1" : "0" , new I_EventListener(){
                 @Override
                 public void onEvent(String ss) {
                     try {
