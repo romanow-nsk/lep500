@@ -37,7 +37,7 @@ public class LEP500File{
         int ampl = 200;
         // 2pi = 100гц = 10 мс, 2 гц = 500 мс, период = 250 отсчетов
         for(int i=0;i<data.length;i++){
-            data[i]=(short) (v0/5+1000*Math.sin(i*2*Math.PI/250.)+500*Math.sin(i*2*Math.PI/100.));
+            data[i]=(short) (v0/5+1000*Math.sin(i*2*Math.PI/25.)+500*Math.sin(i*2*Math.PI/10.));
             v0++;
             }
         }
@@ -73,7 +73,7 @@ public class LEP500File{
             os.write("");
             os.newLine();
             //9 10000
-            os.write("10000");
+            os.write(""+(int)(settings.measureFreq*100));
             os.newLine();
             //10 канал-1 баланс=128 температура=8C
             os.write("канал-"+sensorName);

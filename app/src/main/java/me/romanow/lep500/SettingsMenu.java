@@ -243,6 +243,7 @@ public class SettingsMenu {
                     try {
                         base.set.fullInfo=Integer.parseInt(ss)!=0;
                         settingsChanged();
+                        base.createMenuList();
                     } catch (Exception ee){
                         base.popupInfo("Формат числа");}
                     }

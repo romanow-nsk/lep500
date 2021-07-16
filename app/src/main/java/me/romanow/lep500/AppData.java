@@ -7,7 +7,7 @@ import com.jjoe64.graphview.LineGraphView;
 import java.util.ArrayList;
 
 public class AppData extends Application {
-    public final static String apkVersion = "1.0.2, 13.07.2021";
+    public final static String apkVersion = "1.0.2, 16.07.2021";
     private static AppData ctx = null;
     private LEP500Settings settings = new LEP500Settings();
     private FileDescriptionList fileList = new FileDescriptionList();

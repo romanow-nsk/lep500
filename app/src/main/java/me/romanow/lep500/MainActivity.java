@@ -384,7 +384,10 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 InputStream is = res.o1;
                 if (is==null)
                     return;
+                log.addView(createMultiGraph(R.layout.graphview,ViewProcHigh));
+                defferedStart();
                 processInputStream(is,res.o2.toString());
+                defferedFinish();
                 }
             if(requestCode == CHOOSE_RESULT_COPY) {
                 final Pair<InputStream, FileDescription> pp = openSelected(data);
@@ -749,14 +752,16 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 preloadFromText(CHOOSE_RESULT);
                 }
             });
-        menuList.add(new MenuItemAction("Образец") {
-            @Override
-            public void onSelect() {
-                LEP500File file2 = new LEP500File(set,"Тест",gpsService.lastGPS());
-                BTReceiver receiver = new BTReceiver(btViewFace,btViewFace.BTBack);
-                receiver.startMeasure(file2,true);
-                }
-            });
+        if (set.fullInfo) {
+            menuList.add(new MenuItemAction("Образец") {
+                @Override
+                public void onSelect() {
+                    LEP500File file2 = new LEP500File(set, "Тест", gpsService.lastGPS());
+                    BTReceiver receiver = new BTReceiver(btViewFace, btViewFace.BTBack);
+                    receiver.startMeasure(file2, true);
+                    }
+                });
+            }
         if (set.fullInfo){
         menuList.add(new MenuItemAction("Тестовый сигнал") {
             @Override
