@@ -74,7 +74,7 @@ public class FFTAudioTextFile implements FFTFileSource{
             data[i] *= min;
             }
         }
-    public boolean convertToWave(String PatnToFile,FFTCallBack back){
+    public boolean convertToWave(double freq, String outFile, String PatnToFile,FFTCallBack back){
         fspec=null;
         try {
             AudioFile = new BufferedReader(new FileReader(PatnToFile));
@@ -86,7 +86,7 @@ public class FFTAudioTextFile implements FFTFileSource{
             readData(AudioFile);
             removeTrend(nPoints);
             int k = PatnToFile.lastIndexOf(".");
-            String outname = PatnToFile.substring(0, k)+".wav";
+            String outname = outFile!=null ? outFile : PatnToFile.substring(0, k)+".wav";
             FileOutputStream wav_file = new FileOutputStream(outname);
         	int sample_rate;
             int num_channels;
@@ -96,7 +96,7 @@ public class FFTAudioTextFile implements FFTFileSource{
             int i;  
             num_channels = 1;  
             bytes_per_sample = 2;
-            sample_rate = 44100; //100; // 44100;
+            sample_rate = (int)(freq*100); //100; // 44100;
         	byte_rate = sample_rate*num_channels*bytes_per_sample;
         	write_string("RIFF", wav_file);
             write_little_endian(36 + bytes_per_sample* num_samples*num_channels, 4, wav_file);

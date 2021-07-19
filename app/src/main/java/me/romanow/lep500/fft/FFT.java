@@ -72,8 +72,8 @@ public class FFT {
             return -1;
         }
         this.audioInputStream = audioInputStream;
-        back.onMessage("Длина "+audioInputStream.getFrameLength()+
-                " дискретность "+stepHZLinear+" гц");
+        //back.onMessage("Длина "+audioInputStream.getFrameLength()+
+        //        " дискретность "+stepHZLinear+" гц");
         int size = (int)audioInputStream.getFrameLength();
         return size;
         }
@@ -128,7 +128,7 @@ public class FFT {
                 totalMS += stepMS;
             }
             back.onMessage("Блоков "+nblock);
-            back.onMessage(tc.toString());
+            //back.onMessage(tc.toString());
             close(back);
         } catch (Exception e) {
             back.onError(e);

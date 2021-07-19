@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -63,6 +64,8 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     public YandexDiskService yadisk = new YandexDiskService(this);
     public MailSender mail = new MailSender(this);
     public LEP500Settings set = new LEP500Settings();
+    public volatile boolean shutDown = false;
+    private volatile boolean voiceRun = false;
     //-------------- Постоянные параметры snn-core ---------------------------------------
     public Thread guiThead;
     private final boolean  p_Compress=false;        // Нет компрессии
@@ -76,6 +79,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private final int GraphBackColor = 0x00A0C0C0;
     final static String archiveFile="LEP500Archive.json";
     final static double ViewProcHigh=0.6;
+    final static String VoiceFile="LEP500.wave";
     //------------------------------------------------------------------------------------
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
@@ -198,6 +202,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        shutDown = true;
         unregisterReceiver(blueToothReceiver);
         btViewFace.blueToothOff();
         gpsService.stopService();
@@ -282,15 +287,15 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
             });
         }
-    public void addToLogButton(String ss){
-        addToLogButton(ss,null,null);
+    public LinearLayout addToLogButton(String ss){
+        return addToLogButton(ss,null,null);
         }
-    public void addToLogButton(String ss, View.OnClickListener listener){
-        addToLogButton(ss,listener,null);
+    public LinearLayout addToLogButton(String ss, View.OnClickListener listener){
+        return addToLogButton(ss,listener,null);
         }
-    public void addToLogButton(String ss, View.OnClickListener listener, View.OnLongClickListener listenerLong){
-        LinearLayout button = (LinearLayout)getLayoutInflater().inflate(R.layout.button,null);
-        Button bb = (Button)button.findViewById(R.id.button_press);
+    public LinearLayout addToLogButton(String ss, View.OnClickListener listener, View.OnLongClickListener listenerLong){
+        LinearLayout button = (LinearLayout)getLayoutInflater().inflate(R.layout.ok_item,null);
+        Button bb = (Button) button.findViewById(R.id.ok_button);
         bb.setText(ss);
         bb.setTextSize(greatTextSize);
         if (listener!=null)
@@ -299,6 +304,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             bb.setOnLongClickListener(listenerLong);
         log.addView(button);
         scrollDown();
+        return button;
         }
 
     private void preloadFromText(int resultCode){
@@ -730,6 +736,12 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 selectFromArchive("Конвертировать в wave",convertSelector);
                 }
             });
+        menuList.add(new MenuItemAction("Слушать wave") {
+            @Override
+            public void onSelect() {
+                selectFromArchive("Слушать wave",voiceSelector);
+            }
+        });
         menuList.add(new MenuItemAction("Файл в архив") {
             @Override
             public void onSelect() {
@@ -919,9 +931,45 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             FFTAudioTextFile xx = new FFTAudioTextFile();
             xx.setnPoints(set.nTrendPoints);
             hideFFTOutput=false;
-            xx.convertToWave(pathName, new FFTAdapter(MainActivity.this,fd.toString()));
+            xx.convertToWave(set.measureFreq, null,pathName, new FFTAdapter(MainActivity.this,fd.toString()));
             }
         };
+    private LinearLayout zz;
+    private  I_ArchveSelector voiceSelector = new I_ArchveSelector() {
+        @Override
+        public void onSelect(FileDescription fd, boolean longClick) {
+            String pathName = androidFileDirectory()+"/"+fd.originalFileName;
+            FFTAudioTextFile xx = new FFTAudioTextFile();
+            xx.setnPoints(set.nTrendPoints);
+            hideFFTOutput=false;
+            final String outFile = androidFileDirectory()+"/"+VoiceFile;
+            xx.convertToWave(set.measureFreq, outFile, pathName, new FFTAdapter(MainActivity.this,fd.toString()));
+            zz = addToLogButton("Остановите музыку", new View.OnClickListener(){
+                @Override
+                public void onClick(View v) {
+                    voiceRun=false;
+                    log.removeView(zz);
+                    //zz.setVisibility(View.INVISIBLE);
+                    }
+            });
+            Thread voice = new Thread(){
+                public void run(){
+                    File file = new File(outFile);
+                    voiceRun = true;
+                    try {
+                        MediaPlayer mp = MediaPlayer.create(MainActivity.this, Uri.fromFile(file));
+                            while(voiceRun & ! shutDown){
+                            mp.start();
+                            while (mp.isPlaying() && voiceRun && !shutDown);
+                            }
+                        } catch (Exception ee){
+                            addToLog(ee.toString());
+                            }
+                    }
+                };
+            voice.start();
+            }
+    };
     private  I_ArchveMultiSelector sendMailSelector = new I_ArchveMultiSelector() {
         @Override
         public void onSelect(FileDescriptionList fdlist, boolean longClick) {
