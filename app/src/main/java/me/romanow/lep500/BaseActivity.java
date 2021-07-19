@@ -1,6 +1,12 @@
 package me.romanow.lep500;
 
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -10,6 +16,8 @@ import com.jjoe64.graphview.LineGraphView;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.IOError;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -20,7 +28,9 @@ import me.romanow.lep500.fft.FFTParams;
 import me.romanow.lep500.fft.FFTStatistic;
 
 public abstract class BaseActivity extends AppCompatActivity {
+    public Thread guiThread;
     protected LineGraphView multiGraph=null;
+    protected boolean fullInfo=false;         // Вывод полной информации о спектре
     public final static int greatTextSize=20;             // Крупный шрифт
     private final static int paintColors[]={0x0000A000,0x000000FF,0x0000A0A0,0x00C000C0};
     protected double freqStep=0;
@@ -36,6 +46,15 @@ public abstract class BaseActivity extends AppCompatActivity {
         return getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
         }
     //--------------------------------------------------------------------------
+    public BufferedReader openReader(String fname) throws IOException {
+        FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
+        return new BufferedReader(new InputStreamReader(fis, "Windows-1251"));
+        }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        guiThread = Thread.currentThread();
+        }
     public int getPaintColor(int idx){
         if (idx < paintColors.length)
             return paintColors[idx];
@@ -111,7 +130,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         try {
             FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
             addToLog(fd.toString(),greatTextSize);
-            processInputStream(fis,fd.toString());
+            processInputStream(fd,fis,fd.toString());
            } catch (Throwable e) {
             addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
             }
@@ -125,11 +144,11 @@ public abstract class BaseActivity extends AppCompatActivity {
         String out = "Программная ошибка:\n" + ss;
         return out;
         }
-    public void processInputStream(InputStream is, String title) throws Throwable{
+    public void processInputStream(FileDescription fd,InputStream is, String title) throws Throwable{
         LEP500Settings set = AppData.ctx().set();
         FFTAudioTextFile xx = new FFTAudioTextFile();
         xx.setnPoints(set.nTrendPoints);
-        xx.readData(new BufferedReader(new InputStreamReader(is, "Windows-1251")));
+        xx.readData(fd,new BufferedReader(new InputStreamReader(is, "Windows-1251")));
         xx.removeTrend(set.nTrendPoints);
         long lnt = xx.getFrameLength();
         //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
@@ -140,11 +159,42 @@ public abstract class BaseActivity extends AppCompatActivity {
         fft.setFFTParams(params);
         fft.calcFFTParams();
         freqStep = fft.getStepHZLinear();
+        addToLogHide(fd.gps.toString());
         addToLogHide("Отсчетов: "+xx.getFrameLength());
         addToLogHide("Кадр: "+set.p_BlockSize*FFT.Size0);
         addToLogHide("Перекрытие: "+set.p_OverProc);
         addToLogHide("Дискретность: "+String.format("%5.4f",freqStep)+" гц");
         fft.fftDirect(xx,new FFTAdapter(this,title));
-    }
-
+        }
+    //--------------------------------------------------------------------------------------------------------
+    public void popupToast(int viewId, String ss) {
+        Toast toast3 = Toast.makeText(getApplicationContext(), ss, Toast.LENGTH_LONG);
+        LinearLayout toastContainer = (LinearLayout) toast3.getView();
+        ImageView catImageView = new ImageView(getApplicationContext());
+        TextView txt = (TextView)toastContainer.getChildAt(0);
+        txt.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        txt.setGravity(Gravity.CENTER);
+        catImageView.setImageResource(viewId);
+        toastContainer.addView(catImageView, 0);
+        toastContainer.setOrientation(LinearLayout.HORIZONTAL);
+        toastContainer.setGravity(Gravity.CENTER);
+        toastContainer.setVerticalGravity(5);
+        //toastContainer.setBackgroundResource(R.color.status_almostFree);
+        toast3.setGravity(Gravity.TOP, 0, 20);
+        toast3.show();
+        }
+    public void popupInfo(final String ss) {
+        guiCall(new Runnable() {
+            @Override
+            public void run() {
+                popupToast(R.drawable.info,ss);
+            }
+        });
+        }
+    public void guiCall(Runnable code){
+        if (Thread.currentThread()==guiThread)
+            code.run();
+        else
+            runOnUiThread(code);
+        }
 }

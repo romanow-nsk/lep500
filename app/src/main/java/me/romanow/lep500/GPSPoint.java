@@ -7,9 +7,9 @@ import org.joda.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public class GPSPoint {
-    final static int GeoNone=0;
-    final static int GeoGPS=1;
-    final static int GeoNet=2;
+    public final static int GeoNone=0;
+    public final static int GeoGPS=1;
+    public final static int GeoNet=2;
     final static double gradus=111.12;
     private int state= GeoNone;
     private double geoy=0;           // Широта
@@ -110,7 +110,7 @@ public class GPSPoint {
         if (state== GeoNone)
             return "Нет геоданных";
         DateTimeFormatter dtf = DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss");
-        return (state==GeoGPS ? "gps " : "net ")+toStr(geoy)+","+toStr(geox)+" "+dtf.print(gpsTime);
+        return (state==GeoGPS ? "gps " : "net ")+toStr(geoy)+","+toStr(geox)+(gpsTime ==0 ? "" : " "+dtf.print(gpsTime));
         }
     public String toShortString(){
         if (state== GeoNone)

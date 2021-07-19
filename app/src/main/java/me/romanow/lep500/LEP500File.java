@@ -61,7 +61,7 @@ public class LEP500File{
             os.write(gps.toStrX());
             os.newLine();
             //5 0
-            os.write("0");
+            os.write(""+gps.state());
             os.newLine();
             //6 16 бит  тдм 003
             os.write("16 бит");

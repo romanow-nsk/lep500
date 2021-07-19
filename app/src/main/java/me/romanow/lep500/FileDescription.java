@@ -7,12 +7,12 @@ import org.joda.time.format.DateTimeFormatter;
 import me.romanow.lep500.fft.FFTAudioTextFile;
 
 public class FileDescription extends FFTAudioTextFile {
-    DateTime createDate = new DateTime();
-    String lepNumber="";            // Номер опоры
-    String srcNumber="";            // Номер датчика
-    String comment="";              // Комментарий
-    String originalFileName="";     // Оригинальное имя
-    GPSPoint gps = new GPSPoint();
+    public DateTime createDate = new DateTime();
+    public String lepNumber="";            // Номер опоры
+    public String srcNumber="";            // Номер датчика
+    public String comment="";              // Комментарий
+    public String originalFileName="";     // Оригинальное имя
+    public GPSPoint gps = new GPSPoint();
     public String parseFromName() {
         try{
             String ss = originalFileName.toLowerCase();

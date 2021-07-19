@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import me.romanow.lep500.AppData;
 import me.romanow.lep500.I_EventListener;
 import me.romanow.lep500.I_ListBoxListener;
 import me.romanow.lep500.LEP500File;
@@ -404,7 +405,7 @@ public class BTViewFace {
             break;
     case 1:
             String name = getSensorName(receiver).replace("_","-");
-            LEP500File file = new LEP500File(face.set,name,face.gpsService.lastGPS());
+            LEP500File file = new LEP500File(face.set,name, AppData.ctx().getGpsService().lastGPS());
             receiver.startMeasure(file,false);
             break;
     case 2:

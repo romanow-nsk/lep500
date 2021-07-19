@@ -58,16 +58,17 @@ import me.romanow.lep500.fft.FFTAudioTextFile;
 import me.romanow.lep500.fft.FFTParams;
 import me.romanow.lep500.fft.FFTStatistic;
 import me.romanow.lep500.fft.FFTHarmonic;
+import me.romanow.lep500.yandexmap.MapFilesActivity;
 
 public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     public BTViewFace btViewFace = new BTViewFace(this);
     public YandexDiskService yadisk = new YandexDiskService(this);
     public MailSender mail = new MailSender(this);
     public LEP500Settings set = new LEP500Settings();
+    private GPSService gpsService;
     public volatile boolean shutDown = false;
     private volatile boolean voiceRun = false;
     //-------------- Постоянные параметры snn-core ---------------------------------------
-    public Thread guiThead;
     private final boolean  p_Compress=false;        // Нет компрессии
     private final int  compressLevel=0;
     private final float kMultiple=3.0f;
@@ -84,7 +85,6 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private int nFirstMax=10;               // Количество максимумов в статистике (вывод)
     private int noFirstPoints=20;           // Отрезать точек справа и слева
     private int noLastPoints=1000;
-    public  boolean fullInfo=false;         // Вывод полной информации о спектре
     public boolean hideFFTOutput=false;
     private int waveMas=1;
     private double waveStartTime=0;
@@ -102,13 +102,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     private ImageView MenuButton;
     private ImageView GPSState;
     //--------------------------------------------------------------------------
-    public void guiCall(Runnable code){
-        if (Thread.currentThread()==guiThead)
-            code.run();
-        else
-            runOnUiThread(code);
-        }
-    public GPSService gpsService = new GPSService(new GPSListener() {
+    public GPSListener gpsBack = new GPSListener() {
         @Override
         public void onEvent(String ss) {
             addToLog(ss);
@@ -122,8 +116,8 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 GPSState.setImageResource(R.drawable.gsm);
             if (state ==GPSPoint.GeoGPS)
                 GPSState.setImageResource(R.drawable.gps);
-            }
-        });
+                }
+            };
     private I_EventListener logEvent = new I_EventListener() {
         @Override
         public void onEvent(String ss) {
@@ -136,6 +130,8 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            gpsService = AppData.ctx().getGpsService();
+            gpsService.addGPSListener(gpsBack);
             BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (!mBluetoothAdapter.isEnabled()){
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -143,7 +139,6 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
 
             new FFT();                          // статические данные
-            guiThead = Thread.currentThread();
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             setContentView(R.layout.activity_main);
             btViewFace.init();
@@ -205,6 +200,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         shutDown = true;
         unregisterReceiver(blueToothReceiver);
         btViewFace.blueToothOff();
+        gpsService.removeGPSListener(gpsBack);
         gpsService.stopService();
         }
     public void scrollDown(){
@@ -392,7 +388,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                     return;
                 log.addView(createMultiGraph(R.layout.graphview,ViewProcHigh));
                 defferedStart();
-                processInputStream(is,res.o2.toString());
+                processInputStream(res.o2,is,res.o2.toString());
                 defferedFinish();
                 }
             if(requestCode == CHOOSE_RESULT_COPY) {
@@ -498,31 +494,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
         addToLog(false,String.format("Основная частота=%6.3f гц",list.get(0).idx*freqStep),greatTextSize,getPaintColor(idx));
         }
 
-    //--------------------------------------------------------------------------------------------------------
-    public void popupToast(int viewId, String ss) {
-        Toast toast3 = Toast.makeText(getApplicationContext(), ss, Toast.LENGTH_LONG);
-        LinearLayout toastContainer = (LinearLayout) toast3.getView();
-        ImageView catImageView = new ImageView(getApplicationContext());
-        TextView txt = (TextView)toastContainer.getChildAt(0);
-        txt.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        txt.setGravity(Gravity.CENTER);
-        catImageView.setImageResource(viewId);
-        toastContainer.addView(catImageView, 0);
-        toastContainer.setOrientation(LinearLayout.HORIZONTAL);
-        toastContainer.setGravity(Gravity.CENTER);
-        toastContainer.setVerticalGravity(5);
-        //toastContainer.setBackgroundResource(R.color.status_almostFree);
-        toast3.setGravity(Gravity.TOP, 0, 20);
-        toast3.show();
-        }
-    public void popupInfo(final String ss) {
-        guiCall(new Runnable() {
-            @Override
-            public void run() {
-                popupToast(R.drawable.info,ss);
-            }
-        });
-        }
+
 
 
 
@@ -764,6 +736,13 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                 preloadFromText(CHOOSE_RESULT);
                 }
             });
+        menuList.add(new MenuItemAction("Показать на карте") {
+            @Override
+            public void onSelect() {
+                calcFirstLastPoints();
+                selectMultiFromArchive("Показать на карте",procMapMultiSelector);
+            }
+        });
         if (set.fullInfo) {
             menuList.add(new MenuItemAction("Образец") {
                 @Override
@@ -895,6 +874,25 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             defferedFinish();
             }
         };
+    private  I_ArchveMultiSelector procMapMultiSelector = new I_ArchveMultiSelector() {
+        @Override
+        public void onSelect(FileDescriptionList fd, boolean longClick) {
+            try {
+                ArrayList<FileDescription> list = AppData.ctx().getFileList();
+                list.clear();
+                for (FileDescription ff : fd){
+                    FFTAudioTextFile xx = new FFTAudioTextFile();
+                    xx.readHeader(ff,openReader(ff.originalFileName));
+                    xx.close();
+                    if (ff.gps.gpsValid())
+                        list.add(ff);
+                    }
+                Intent intent = new Intent();
+                intent.setClass(getApplicationContext(),MapFilesActivity.class);
+                startActivity(intent);
+                } catch (Exception ee){ addToLog(ee.toString());}
+            }
+        };
     private  I_ArchveMultiSelector procViewSelectorFull = new I_ArchveMultiSelector() {
         @Override
         public void onSelect(FileDescriptionList fd, boolean longClick) {
@@ -931,7 +929,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             FFTAudioTextFile xx = new FFTAudioTextFile();
             xx.setnPoints(set.nTrendPoints);
             hideFFTOutput=false;
-            xx.convertToWave(set.measureFreq, null,pathName, new FFTAdapter(MainActivity.this,fd.toString()));
+            xx.convertToWave(fd,set.measureFreq, null,pathName, new FFTAdapter(MainActivity.this,fd.toString()));
             }
         };
     private LinearLayout zz;
@@ -943,7 +941,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             xx.setnPoints(set.nTrendPoints);
             hideFFTOutput=false;
             final String outFile = androidFileDirectory()+"/"+VoiceFile;
-            xx.convertToWave(set.measureFreq, outFile, pathName, new FFTAdapter(MainActivity.this,fd.toString()));
+            xx.convertToWave(fd,set.measureFreq, outFile, pathName, new FFTAdapter(MainActivity.this,fd.toString()));
             zz = addToLogButton("Остановите музыку", new View.OnClickListener(){
                 @Override
                 public void onClick(View v) {
@@ -1097,7 +1095,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
             FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
             addToLog(fd.toString(),greatTextSize);
             FFTAudioTextFile xx = new FFTAudioTextFile();
-            xx.readData(new BufferedReader(new InputStreamReader(fis, "Windows-1251")));
+            xx.readData(fd,new BufferedReader(new InputStreamReader(fis, "Windows-1251")));
             waveMas=1;
             waveStartTime=0;
             procWaveForm(xx);
@@ -1165,7 +1163,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                     hideFFTOutput=true;
                     FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
                     addToLog(ff.toString(),greatTextSize);
-                    processInputStream(fis,ff.toString());
+                    processInputStream(ff,fis,ff.toString());
                     } catch (Throwable e) {
                         addToLog("Файл не открыт: "+ff.originalFileName+"\n"+createFatalMessage(e,10));
                         }
@@ -1179,7 +1177,7 @@ public class MainActivity extends BaseActivity {     //!!!!!!!!!!!!!!!!!!!!!!!!!
                     hideFFTOutput=false;
                     FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+ff.originalFileName);
                     addToLog(ff.toString());
-                    processInputStream(fis,ff.toString());
+                    processInputStream(ff,fis,ff.toString());
                     } catch (Throwable e) {
                         addToLog("Файл не открыт: "+ff.originalFileName+"\n"+e.toString());
                         return false;

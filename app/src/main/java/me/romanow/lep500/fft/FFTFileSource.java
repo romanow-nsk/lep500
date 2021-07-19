@@ -6,11 +6,13 @@
 package me.romanow.lep500.fft;
 
 
+import me.romanow.lep500.FileDescription;
+
 /**
  *
  * @author romanow
  */
 public interface FFTFileSource extends FFTAudioSource{      // маркерный интерфейс
-    public boolean testAndOpenFile(int mode, String PatnToFile, int sizeHZ, FFTCallBack back);
+    public boolean testAndOpenFile(FileDescription fd,int mode, String PatnToFile, int sizeHZ, FFTCallBack back);
     public String getFileSpec();
 }

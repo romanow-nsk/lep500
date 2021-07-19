@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat;
 
 import org.joda.time.DateTime;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import static androidx.core.content.ContextCompat.checkSelfPermission;
@@ -27,16 +28,14 @@ public class GPSService {
     private boolean gpsOn = false;
     private Handler event = new Handler();
     private LocationManager mLocationManager = null;
-    private GPSListener back;
     private GPSPoint lastGPSGeo = new GPSPoint();
     private GPSPoint lastGPSNet = new GPSPoint();
     private Context context;
     private int satCount=0;
     private DateTime lastGPSTime = new DateTime();
+    private ArrayList<GPSListener> listeners = new ArrayList<>();   // Слушатели
 
-    public GPSService(GPSListener lsn) {
-        back = lsn;
-        }
+    public GPSService() {}
 
     public void setDelay(int sec, Runnable code) {
         event.postDelayed(code, sec * 1000);
@@ -46,18 +45,27 @@ public class GPSService {
         event.removeCallbacks(code);
     }
 
+    public synchronized void sendMessage(String mes){
+        for(GPSListener listener : listeners)
+            listener.onEvent(mes);
+        }
+    public synchronized void sendGPS(GPSPoint gps){
+        for(GPSListener listener : listeners)
+            listener.onGPS(gps);
+        }
+
     public void startService(Context context0) {
         context = context0;
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         if (mLocationManager == null) {
-            back.onEvent("Недоступен менеджер местоположения/навигации");
+            sendMessage("Недоступен менеджер местоположения/навигации");
         } else {
             try {
                 if (checkSelfPermission(context,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                         && checkSelfPermission(context,Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
                     //    Activity#requestPermissions
-                    back.onEvent("Установите разрешения GPS");
+                    sendMessage("Установите разрешения GPS");
                     return;
                     }
                 mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPSInterval * 1000, GPSDistance, locationListener);
@@ -65,7 +73,7 @@ public class GPSService {
                 setDelay(GPSInterval, gpsClock);
                 gpsOn = true;
             } catch (Exception ee) {
-                back.onEvent("Ошибка GPS-сервиса: " + ee.toString());
+                sendMessage("Ошибка GPS-сервиса: " + ee.toString());
             }
         }
     }
@@ -99,7 +107,7 @@ public class GPSService {
                 if (checkSelfPermission(context,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
                     //    Activity#requestPermissions
-                    back.onEvent("Установите разрешения GPS");
+                    sendMessage("Установите разрешения GPS");
                     return;
                 }
                 GpsStatus status = mLocationManager.getGpsStatus(null);
@@ -118,7 +126,7 @@ public class GPSService {
                     //                                          int[] grantResults)
                     // to handle the case where the user grants the permission. See the documentation
                     // for Activity#requestPermissions for more details.
-                    back.onEvent("Установите разрешения GPS");
+                    sendMessage("Установите разрешения GPS");
                     return;
                     }
                 GPSPoint old = lastGPS();
@@ -137,15 +145,21 @@ public class GPSService {
                     lastGPSTime = new DateTime();
                     }
                 if (lastGPS().state()!=old.state())
-                    back.onGPS(lastGPS());
+                    sendGPS(lastGPS());
                 if (gpsOn)
                     setDelay(GPSInterval,gpsClock);
                     }
             catch(Throwable ee){
-                back.onEvent("Ошибка GPS-сервиса: "+ee.toString());
+                sendMessage("Ошибка GPS-сервиса: "+ee.toString());
                 stopService();
             }
         }};
+    public synchronized void addGPSListener(GPSListener lsn){
+        listeners.add(lsn);
+        }
+    public synchronized void removeGPSListener(GPSListener lsn){
+        listeners.remove(lsn);
+        }
     private LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {

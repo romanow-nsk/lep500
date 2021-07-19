@@ -11,7 +11,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+
+import me.romanow.lep500.FileDescription;
+import me.romanow.lep500.GPSPoint;
 
 
 /**
@@ -47,10 +51,31 @@ public class FFTAudioTextFile implements FFTFileSource{
     public double[]  getData(){
         return data.clone();
         }
-    public void readData(BufferedReader AudioFile) throws IOException {
+
+    public void readHeader(FileDescription fd, BufferedReader AudioFile) throws IOException {
         String in;
-        for(int i=0;i<10;i++)           // 10 первых строк пропустить
-            in = AudioFile.readLine();
+        in = AudioFile.readLine();          // 0
+        in = AudioFile.readLine();          // 1
+        String geoY = AudioFile.readLine(); // 2
+        String geoX = AudioFile.readLine(); // 3
+        int gpsState = Integer.parseInt(AudioFile.readLine());  // 4
+        if (gpsState == GPSPoint.GeoNone){
+            if (geoX.length()==0)
+                fd.gps = new GPSPoint();
+            else
+                fd.gps = new GPSPoint(geoY,geoX,true);
+        }
+        else
+            fd.gps = new GPSPoint(geoY,geoX,gpsState==GPSPoint.GeoGPS);
+        in = AudioFile.readLine();
+        in = AudioFile.readLine();
+        in = AudioFile.readLine();
+        in = AudioFile.readLine();
+        in = AudioFile.readLine();
+        }
+
+    public void readData(FileDescription fd, BufferedReader AudioFile) throws IOException {
+        readHeader(fd,AudioFile);
         sz = Integer.parseInt(AudioFile.readLine());
         data = new double[sz];
         double mid=0,min=data[0],max=data[0];
@@ -74,7 +99,7 @@ public class FFTAudioTextFile implements FFTFileSource{
             data[i] *= min;
             }
         }
-    public boolean convertToWave(double freq, String outFile, String PatnToFile,FFTCallBack back){
+    public boolean convertToWave(FileDescription fd, double freq, String outFile, String PatnToFile,FFTCallBack back){
         fspec=null;
         try {
             AudioFile = new BufferedReader(new FileReader(PatnToFile));
@@ -83,7 +108,7 @@ public class FFTAudioTextFile implements FFTFileSource{
                 }
         String in;
         try {
-            readData(AudioFile);
+            readData(fd,AudioFile);
             removeTrend(nPoints);
             int k = PatnToFile.lastIndexOf(".");
             String outname = outFile!=null ? outFile : PatnToFile.substring(0, k)+".wav";
@@ -129,7 +154,7 @@ public class FFTAudioTextFile implements FFTFileSource{
     public final static int Test=0;
     public final static int Open=1;
     public final static int OpenAndPlay=2;
-    public boolean testAndOpenFile(int mode, String PatnToFile, int sizeHZ, FFTCallBack back){
+    public boolean testAndOpenFile(FileDescription fd, int mode, String PatnToFile, int sizeHZ, FFTCallBack back){
         try {
             AudioFile = new BufferedReader(new FileReader(PatnToFile));
             } catch (FileNotFoundException ex) {
@@ -141,7 +166,7 @@ public class FFTAudioTextFile implements FFTFileSource{
             }
         String in;
         try {
-            readData(AudioFile);
+            readData(fd,AudioFile);
             removeTrend(nPoints);
             close();
             cnum=0;

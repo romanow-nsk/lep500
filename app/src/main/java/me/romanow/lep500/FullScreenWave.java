@@ -42,7 +42,7 @@ public class FullScreenWave extends BaseActivity {
                     FileInputStream fis = new FileInputStream(androidFileDirectory()+"/"+fname);
                     addToLog(fd.toString(),greatTextSize);
                     FFTAudioTextFile xx = new FFTAudioTextFile();
-                    xx.readData(new BufferedReader(new InputStreamReader(fis, "Windows-1251")));
+                    xx.readData(ff,new BufferedReader(new InputStreamReader(fis, "Windows-1251")));
                     paintOne(xx.getData(),getPaintColor(idx++) | 0xFF000000);
                     } catch (Throwable e) {
                         addToLog("Файл не открыт: "+fname+"\n"+createFatalMessage(e,10));
