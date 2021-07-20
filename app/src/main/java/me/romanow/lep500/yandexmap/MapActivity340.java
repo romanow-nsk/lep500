@@ -157,8 +157,9 @@ public class MapActivity340 extends BaseActivity {
                 if (back!=null)
                     back.onSelect(idx);
                 return true;
-            }
-        });
+                }
+            });
+        if (moveTo) moveTo(gp);
         return circle;
     }
     public void onMyCreate(){}          // Отложенные действия

@@ -16,6 +16,7 @@ import java.io.OutputStream;
 
 import me.romanow.lep500.FileDescription;
 import me.romanow.lep500.GPSPoint;
+import me.romanow.lep500.LEP500File;
 
 
 /**
@@ -54,24 +55,34 @@ public class FFTAudioTextFile implements FFTFileSource{
 
     public void readHeader(FileDescription fd, BufferedReader AudioFile) throws IOException {
         String in;
-        in = AudioFile.readLine();          // 0
-        in = AudioFile.readLine();          // 1
-        String geoY = AudioFile.readLine(); // 2
-        String geoX = AudioFile.readLine(); // 3
+        fd.fileDateTime = AudioFile.readLine();             // 0
+        fd.fileGroupTitle = AudioFile.readLine();           // 1
+        String geoY = AudioFile.readLine();                 // 2
+        String geoX = AudioFile.readLine();                 // 3
         int gpsState = Integer.parseInt(AudioFile.readLine());  // 4
         if (gpsState == GPSPoint.GeoNone){
             if (geoX.length()==0)
                 fd.gps = new GPSPoint();
             else
                 fd.gps = new GPSPoint(geoY,geoX,true);
-        }
+            }
         else
             fd.gps = new GPSPoint(geoY,geoX,gpsState==GPSPoint.GeoGPS);
-        in = AudioFile.readLine();
-        in = AudioFile.readLine();
-        in = AudioFile.readLine();
-        in = AudioFile.readLine();
-        in = AudioFile.readLine();
+        in = AudioFile.readLine();      // 5
+        in = AudioFile.readLine();      // 6
+        in = AudioFile.readLine();      // 7
+        try {
+            fd.fileMeasureCounter = Integer.parseInt(in);
+            } catch (Exception ee){ fd.fileMeasureCounter=0; }
+        in = AudioFile.readLine();      // 8
+        try {
+            fd.fileFreq = Integer.parseInt(in)/100.;
+            } catch (Exception ee){ fd.fileFreq=100; }
+        in = AudioFile.readLine();      // 9
+        if (in.toLowerCase().startsWith(LEP500File.SensorPrefix))
+            fd.fileSensorName = in.substring(LEP500File.SensorPrefix.length());
+        else
+            fd.fileSensorName = in;
         }
 
     public void readData(FileDescription fd, BufferedReader AudioFile) throws IOException {

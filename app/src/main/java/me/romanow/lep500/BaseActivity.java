@@ -149,17 +149,17 @@ public abstract class BaseActivity extends AppCompatActivity {
         FFTAudioTextFile xx = new FFTAudioTextFile();
         xx.setnPoints(set.nTrendPoints);
         xx.readData(fd,new BufferedReader(new InputStreamReader(is, "Windows-1251")));
+        addToLogHide(fd.measureMetaData());
         xx.removeTrend(set.nTrendPoints);
         long lnt = xx.getFrameLength();
         //for(p_BlockSize=1;p_BlockSize*FFT.Size0<=lnt;p_BlockSize*=2);
         //if (p_BlockSize!=1) p_BlockSize/=2;
         FFTParams params = new FFTParams().W(set.p_BlockSize* FFT.Size0).procOver(set.p_OverProc).
-                compressMode(false).winMode(set.winFun).freqHZ(set.measureFreq);
+                compressMode(false).winMode(set.winFun).freqHZ(fd.fileFreq);
         FFT fft = new FFT();
         fft.setFFTParams(params);
         fft.calcFFTParams();
         freqStep = fft.getStepHZLinear();
-        addToLogHide(fd.gps.toString());
         addToLogHide("Отсчетов: "+xx.getFrameLength());
         addToLogHide("Кадр: "+set.p_BlockSize*FFT.Size0);
         addToLogHide("Перекрытие: "+set.p_OverProc);

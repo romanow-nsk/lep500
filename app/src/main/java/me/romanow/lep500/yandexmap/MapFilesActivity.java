@@ -26,7 +26,7 @@ public class MapFilesActivity extends MapActivity340{
         moveToSelf();
         ArrayList<FileDescription> list = AppData.ctx().getFileList();
         for(FileDescription file : list)
-            paint(file.toString(),file.gps,R.drawable.where,true);
+            paint(file.toString(),file.gps,R.drawable.mappoint,true);
         }
     @Override
     protected void onDestroy() {

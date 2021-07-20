@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 
 public class LEP500File{
+    public final static String SensorPrefix="канал-";
     private DateTime createDate = new DateTime();
     private String  sensorName;                  // Номер датчика
     private LEP500Settings settings;
@@ -47,36 +48,36 @@ public class LEP500File{
             String fspec = path+"/"+createOriginalFileName();
             out = new FileOutputStream(fspec);
             BufferedWriter os = new BufferedWriter(new OutputStreamWriter(out,"Windows-1251"));
-            //1 16 октября 2020г. 16:53:01
+            //0 16 октября 2020г. 16:53:01
             DateTimeFormatter dtf = DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss");
             os.write(dtf.print(createDate));
             os.newLine();
-            //2 CM-316 ужур сора 1 цепь опора 352
+            //1 CM-316 ужур сора 1 цепь опора 352
             os.write(settings.measureGroup+" "+settings.measureTitle);
             os.newLine();
-            //3 -------
+            //2 -------
             os.write(gps.toStrY());
             os.newLine();
-            //4 -------
+            //3 -------
             os.write(gps.toStrX());
             os.newLine();
-            //5 0
+            //4 0
             os.write(""+gps.state());
             os.newLine();
-            //6 16 бит  тдм 003
+            //5 16 бит  тдм 003
             os.write("16 бит");
             os.newLine();
-            //7 1
+            //6 1
             os.write("1");
             os.newLine();
-            //8
-            os.write("");
+            //7
+            os.write(""+settings.measureCounter);
             os.newLine();
-            //9 10000
+            //8 10000
             os.write(""+(int)(settings.measureFreq*100));
             os.newLine();
-            //10 канал-1 баланс=128 температура=8C
-            os.write("канал-"+sensorName);
+            //9 канал-1 баланс=128 температура=8C
+            os.write(SensorPrefix+sensorName);
             os.newLine();
             os.write(""+data.length);
             os.newLine();

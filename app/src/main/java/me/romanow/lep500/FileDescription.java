@@ -8,11 +8,16 @@ import me.romanow.lep500.fft.FFTAudioTextFile;
 
 public class FileDescription extends FFTAudioTextFile {
     public DateTime createDate = new DateTime();
-    public String lepNumber="";            // Номер опоры
+    public String lepNumber="";            // Номер опоры (группа)
     public String srcNumber="";            // Номер датчика
     public String comment="";              // Комментарий
     public String originalFileName="";     // Оригинальное имя
     public GPSPoint gps = new GPSPoint();
+    public double fileFreq = 0;          // Частота измерений из файла
+    public String fileGroupTitle="";     // Группа-опора из файла
+    public String fileDateTime="";       // Дата-время создания из файла
+    public String fileSensorName="";     // Имя сенсора из файла
+    public int fileMeasureCounter=0;     // Последовательный номер измерения из файла
     public String parseFromName() {
         try{
             String ss = originalFileName.toLowerCase();
@@ -51,6 +56,10 @@ public class FileDescription extends FFTAudioTextFile {
             }
     public String toString(){
         return lepNumber+" "+srcNumber+"\n"+createDate.toString(DateTimeFormat.forPattern("dd-MM-yyyy HH:mm:ss"));
+        }
+    public String measureMetaData(){
+        return "Геолокация: "+gps.toString()+"\nГруппа-Опора: "+fileGroupTitle+"\nДата создания: "+fileDateTime+
+                "\nЧастота: "+String.format("%6.2f",fileFreq)+"\nДатчик: "+fileSensorName+"\nНомер измерения: "+fileMeasureCounter;
         }
     public FileDescription(String fname){
         originalFileName = fname;
